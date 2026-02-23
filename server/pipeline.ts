@@ -430,7 +430,10 @@ export async function runFullPipeline(letterId: number, intake: IntakeJson, dbFi
     ? (process.env.BUILT_IN_FORGE_API_URL.includes('manus') ? process.env.VITE_APP_ID ? `https://${process.env.VITE_APP_ID}.manus.computer` : "" : "")
     : "";
 
-  if (n8nWebhookUrl && n8nWebhookUrl.startsWith("https://")) {
+  // ── Routing: Direct 3-stage pipeline is PRIMARY.
+  // Set N8N_PRIMARY=true in env to route through n8n instead (useful for debugging/experimentation).
+  const useN8nPrimary = process.env.N8N_PRIMARY === "true" && !!n8nWebhookUrl && n8nWebhookUrl.startsWith("https://");
+  if (useN8nPrimary) {
     const pipelineJob = await createWorkflowJob({
       letterRequestId: letterId,
       jobType: "generation_pipeline",
@@ -503,7 +506,7 @@ export async function runFullPipeline(letterId: number, intake: IntakeJson, dbFi
       console.warn(`[Pipeline] n8n call failed for letter #${letterId}: ${n8nMsg}. Falling back to in-app pipeline.`);
     }
   } else {
-    console.log(`[Pipeline] n8n webhook not configured — using in-app 3-stage pipeline for letter #${letterId}`);
+    console.log(`[Pipeline] N8N_PRIMARY not set — using direct 3-stage pipeline (primary path) for letter #${letterId}`);
   }
 
   // ── Fallback: In-app 3-stage pipeline ─────────────────────────────────────

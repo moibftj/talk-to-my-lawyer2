@@ -217,3 +217,10 @@
 - [x] Upload attachments after submit (parallel, non-blocking failures)
 - [x] LetterDetail subscriber attachments panel already complete (storageUrl + fileName download links)
 - [x] 38/38 tests passing, 0 TypeScript errors
+
+## Phase 21: Pipeline Routing Inversion
+- [x] Read pipeline.ts routing logic
+- [x] Make direct 3-stage pipeline (Perplexity + OpenAI + Claude) the primary path
+- [x] Make n8n an optional fallback (only if N8N_WEBHOOK_URL is set AND N8N_PRIMARY=true env flag)
+- [x] Update log messages to reflect new routing
+- [x] 38/38 tests passing, 0 TypeScript errors
