@@ -210,3 +210,10 @@
 - [x] Apply migration via webdev_execute_sql
 - [x] Verify all 7 indexes exist in the database (confirmed via information_schema query)
 - [x] Update SPEC_COMPLIANCE.md to mark indexes as complete
+
+## Phase 20: Attachment Upload UI (SubmitLetter Step 6)
+- [x] Audit uploadAttachment mutation and storage contract
+- [x] Build Step 6 Evidence file-picker with drag-drop, file list, remove button, size/type validation
+- [x] Upload attachments after submit (parallel, non-blocking failures)
+- [x] LetterDetail subscriber attachments panel already complete (storageUrl + fileName download links)
+- [x] 38/38 tests passing, 0 TypeScript errors

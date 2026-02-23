@@ -6,12 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, CheckCircle, FileText, MapPin, Users, AlignLeft, Target } from "lucide-react";
+import { ChevronRight, ChevronLeft, CheckCircle, FileText, MapPin, Users, AlignLeft, Target, Paperclip, Upload, X, File as FileIcon } from "lucide-react";
 import { LETTER_TYPE_CONFIG, US_STATES } from "../../../../shared/types";
 import { AlertCircle, Scale } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Link } from "wouter";
 
 const STEPS = [
@@ -20,7 +21,28 @@ const STEPS = [
   { id: 3, label: "Parties", icon: <Users className="w-4 h-4" /> },
   { id: 4, label: "Details", icon: <AlignLeft className="w-4 h-4" /> },
   { id: 5, label: "Outcome", icon: <Target className="w-4 h-4" /> },
+  { id: 6, label: "Evidence", icon: <Paperclip className="w-4 h-4" /> },
 ];
+
+const MAX_FILE_MB = 10;
+const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+const ALLOWED_EXTS = [".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp", ".txt"];
+
+interface PendingFile {
+  id: string;
+  name: string;
+  size: number;
+  mimeType: string;
+  base64: string;
+  status: "ready" | "error";
+  error?: string;
+}
+
+function fmtBytes(b: number) {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 interface FormData {
   letterType: string;
@@ -67,17 +89,16 @@ const INITIAL: FormData = {
 export default function SubmitLetter() {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [, navigate] = useLocation();
 
   const { data: canSubmitData, isLoading: checkingSubscription } = trpc.billing.checkCanSubmit.useQuery();
 
-  const submit = trpc.letters.submit.useMutation({
-    onSuccess: (data) => {
-      toast.success("Letter submitted successfully! AI pipeline has started.");
-      navigate(`/letters/${data.letterId}`);
-    },
-    onError: (err) => toast.error(err.message),
-  });
+  const submit = trpc.letters.submit.useMutation();
+  const uploadAttachment = trpc.letters.uploadAttachment.useMutation();
 
   const update = (field: keyof FormData, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -88,30 +109,98 @@ export default function SubmitLetter() {
     if (step === 3) return !!form.senderName && !!form.senderAddress && !!form.recipientName && !!form.recipientAddress;
     if (step === 4) return form.description.length >= 20;
     if (step === 5) return form.desiredOutcome.length >= 10;
+    if (step === 6) return true; // attachments are optional
     return true;
   };
 
-  const handleSubmit = () => {
-    const intakeJson = {
-      schemaVersion: "1.0",
-      letterType: form.letterType,
-      sender: { name: form.senderName, address: form.senderAddress, email: form.senderEmail || undefined, phone: form.senderPhone || undefined },
-      recipient: { name: form.recipientName, address: form.recipientAddress, email: form.recipientEmail || undefined },
-      jurisdiction: { country: "US", state: form.jurisdictionState, city: form.jurisdictionCity || undefined },
-      matter: { category: form.letterType, subject: form.subject, description: form.description, incidentDate: form.incidentDate || undefined },
-      financials: form.amountOwed ? { amountOwed: parseFloat(form.amountOwed), currency: "USD" } : undefined,
-      desiredOutcome: form.desiredOutcome,
-      deadlineDate: form.deadlineDate || undefined,
-      additionalContext: form.additionalContext || undefined,
-      tonePreference: form.tonePreference,
-    };
-    submit.mutate({
-      letterType: form.letterType as any,
-      subject: form.subject,
-      jurisdictionState: form.jurisdictionState,
-      jurisdictionCity: form.jurisdictionCity || undefined,
-      intakeJson,
+  // ── File helpers ──────────────────────────────────────────────────────────
+  const readBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve((reader.result as string).split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
     });
+
+  const addFiles = useCallback(async (files: FileList | File[]) => {
+    const arr = Array.from(files);
+    if (pendingFiles.length + arr.length > 5) {
+      toast.error("Maximum 5 attachments allowed");
+      return;
+    }
+    for (const file of arr) {
+      const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
+      if (file.size > MAX_FILE_BYTES) {
+        toast.error(`${file.name}: exceeds ${MAX_FILE_MB} MB limit`);
+        continue;
+      }
+      if (!ALLOWED_EXTS.includes(ext)) {
+        toast.error(`${file.name}: unsupported file type`);
+        continue;
+      }
+      try {
+        const base64 = await readBase64(file);
+        setPendingFiles((prev) => [...prev, {
+          id: `${file.name}-${Date.now()}`,
+          name: file.name,
+          size: file.size,
+          mimeType: file.type || "application/octet-stream",
+          base64,
+          status: "ready",
+        }]);
+      } catch {
+        toast.error(`Failed to read ${file.name}`);
+      }
+    }
+  }, [pendingFiles.length]);
+
+  const removeFile = (id: string) => setPendingFiles((prev) => prev.filter((f) => f.id !== id));
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false);
+    addFiles(e.dataTransfer.files);
+  };
+
+  // ── Submit with attachments ───────────────────────────────────────────────
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const intakeJson = {
+        schemaVersion: "1.0",
+        letterType: form.letterType,
+        sender: { name: form.senderName, address: form.senderAddress, email: form.senderEmail || undefined, phone: form.senderPhone || undefined },
+        recipient: { name: form.recipientName, address: form.recipientAddress, email: form.recipientEmail || undefined },
+        jurisdiction: { country: "US", state: form.jurisdictionState, city: form.jurisdictionCity || undefined },
+        matter: { category: form.letterType, subject: form.subject, description: form.description, incidentDate: form.incidentDate || undefined },
+        financials: form.amountOwed ? { amountOwed: parseFloat(form.amountOwed), currency: "USD" } : undefined,
+        desiredOutcome: form.desiredOutcome,
+        deadlineDate: form.deadlineDate || undefined,
+        additionalContext: form.additionalContext || undefined,
+        tonePreference: form.tonePreference,
+      };
+      const result = await submit.mutateAsync({
+        letterType: form.letterType as any,
+        subject: form.subject,
+        jurisdictionState: form.jurisdictionState,
+        jurisdictionCity: form.jurisdictionCity || undefined,
+        intakeJson,
+      });
+      const letterId = result.letterId;
+      // Upload attachments in parallel (non-blocking failures)
+      if (pendingFiles.length > 0) {
+        await Promise.allSettled(
+          pendingFiles.filter((f) => f.status === "ready").map((f) =>
+            uploadAttachment.mutateAsync({ letterId, fileName: f.name, mimeType: f.mimeType, base64Data: f.base64 })
+          )
+        );
+      }
+      toast.success("Letter submitted! AI pipeline has started.");
+      navigate(`/letters/${letterId}`);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Submission failed");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Show subscription gate if user cannot submit
@@ -379,9 +468,76 @@ export default function SubmitLetter() {
                 </div>
               </>
             )}
+            {/* ── Step 6: Evidence / Attachments ───────────────────────────── */}
+            {step === 6 && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Upload supporting documents, photos, or contracts that strengthen your case.
+                  Attachments are <span className="font-medium">optional</span> — you can submit without them.
+                </p>
+
+                {/* Drag-drop zone */}
+                <div
+                  onDrop={onDrop}
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
+                    isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/20"
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept={ALLOWED_EXTS.join(",")}
+                    className="hidden"
+                    onChange={(e) => e.target.files && addFiles(e.target.files)}
+                  />
+                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm font-medium">Drop files here or click to browse</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PDF, DOCX, JPG, PNG, TXT &nbsp;·&nbsp; Max {MAX_FILE_MB} MB per file &nbsp;·&nbsp; Up to 5 files
+                  </p>
+                </div>
+
+                {/* File list */}
+                {pendingFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {pendingFiles.map((f) => (
+                      <div key={f.id} className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/20">
+                        <div className="w-8 h-8 rounded flex items-center justify-center shrink-0 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+                          <FileIcon className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{f.name}</p>
+                          <p className="text-xs text-muted-foreground">{fmtBytes(f.size)} &nbsp;·&nbsp; <span className="text-green-600 dark:text-green-400">Ready</span></p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(f.id)}
+                          className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                          aria-label="Remove"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {pendingFiles.length === 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+                    <AlertCircle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-blue-700 dark:text-blue-300">
+                      No attachments added. You can still submit — attachments help the attorney build a stronger letter.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
-
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <Button
@@ -393,14 +549,14 @@ export default function SubmitLetter() {
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back
           </Button>
-          {step < 5 ? (
+          {step < 6 ? (
             <Button onClick={() => setStep((s) => s + 1)} disabled={!canProceed()}>
               Next
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={!canProceed() || submit.isPending}>
-              {submit.isPending ? "Submitting..." : "Submit Letter"}
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Submitting..." : "Submit Letter"}
               <CheckCircle className="w-4 h-4 ml-1" />
             </Button>
           )}
