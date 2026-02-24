@@ -224,3 +224,17 @@
 - [x] Make n8n an optional fallback (only if N8N_WEBHOOK_URL is set AND N8N_PRIMARY=true env flag)
 - [x] Update log messages to reflect new routing
 - [x] 38/38 tests passing, 0 TypeScript errors
+
+## Phase 22: Freemium Model (First Letter Free, Attorney Review Paid)
+- [ ] Add `generated_unlocked` status to schema enum and status machine
+- [ ] Add DB migration for new status value
+- [ ] Update pipeline: check if first letter → set generated_unlocked (free), else generated_locked (paywall)
+- [ ] Add sendForReview mutation: generated_unlocked → pending_review (free, no payment)
+- [ ] Update LetterDetail: show full AI draft when status = generated_unlocked, CTA = "Send for Attorney Review ($29)"
+- [ ] Update LetterPaywall copy: rename to "Get Attorney Review" gate
+- [ ] Update MyLetters: show "AI Draft Ready - Free" badge for generated_unlocked
+- [ ] Update StatusTimeline: add generated_unlocked step with green checkmark
+- [ ] Update StatusBadge: generated_unlocked = "AI Draft Ready" in green
+- [ ] Update Pricing page to reflect freemium model (first letter free)
+- [ ] Update email: sendLetterReadyEmail copy for free vs paid path
+- [ ] Run tests, update SPEC_COMPLIANCE.md, save checkpoint
