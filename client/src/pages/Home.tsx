@@ -30,6 +30,7 @@ const LOGO_URL =
 export default function Home() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && isAuthenticated && user) {
@@ -54,7 +55,6 @@ export default function Home() {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
