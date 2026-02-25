@@ -6,6 +6,7 @@ import {
   attachments,
   commissionLedger,
   discountCodes,
+  emailVerificationTokens,
   letterRequests,
   letterVersions,
   notifications,
@@ -755,5 +756,90 @@ export async function getPayoutRequestById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(payoutRequests).where(eq(payoutRequests.id, id)).limit(1);
+  return result[0];
+}
+
+// ─── Email Verification Token Helpers ────────────────────────────────────────
+
+/** Create a new email verification token (24h expiry) */
+export async function createEmailVerificationToken(userId: number, email: string, token: string) {
+  const db = await getDb();
+  if (!db) return;
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  await db.insert(emailVerificationTokens).values({ userId, email, token, expiresAt });
+}
+
+/** Find a valid (unused, unexpired) verification token */
+export async function findValidVerificationToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(emailVerificationTokens)
+    .where(
+      and(
+        eq(emailVerificationTokens.token, token),
+        isNull(emailVerificationTokens.usedAt),
+        sql`${emailVerificationTokens.expiresAt} > now()`
+      )
+    )
+    .limit(1);
+  return result[0];
+}
+
+/** Mark a verification token as used and mark the user as verified */
+export async function consumeVerificationToken(token: string) {
+  const db = await getDb();
+  if (!db) return false;
+  const record = await findValidVerificationToken(token);
+  if (!record) return false;
+  // Mark token as used
+  await db
+    .update(emailVerificationTokens)
+    .set({ usedAt: new Date() })
+    .where(eq(emailVerificationTokens.token, token));
+  // Mark user as verified
+  await db
+    .update(users)
+    .set({ emailVerified: true, updatedAt: new Date() })
+    .where(eq(users.id, record.userId));
+  return true;
+}
+
+/** Delete any existing unused tokens for a user (before issuing a new one) */
+export async function deleteUserVerificationTokens(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .delete(emailVerificationTokens)
+    .where(
+      and(
+        eq(emailVerificationTokens.userId, userId),
+        isNull(emailVerificationTokens.usedAt)
+      )
+    );
+}
+
+/** Check if a user's email is verified */
+export async function isUserEmailVerified(userId: number): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .select({ emailVerified: users.emailVerified })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return result[0]?.emailVerified ?? false;
+}
+
+/** Look up a user by email address */
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   return result[0];
 }

@@ -102,6 +102,7 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   lastSignedIn: timestamp("last_signed_in", { withTimezone: true }).defaultNow().notNull(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -361,3 +362,21 @@ export const payoutRequests = pgTable("payout_requests", {
 
 export type PayoutRequest = typeof payoutRequests.$inferSelect;
 export type InsertPayoutRequest = typeof payoutRequests.$inferInsert;
+
+// ═══════════════════════════════════════════════════════
+// TABLE: email_verification_tokens
+// ═══════════════════════════════════════════════════════
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  email: varchar("email", { length: 320 }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  tokenIdx: index("idx_email_verification_tokens_token").on(t.token),
+  userIdx: index("idx_email_verification_tokens_user_id").on(t.userId),
+}));
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
+export type InsertEmailVerificationToken = typeof emailVerificationTokens.$inferInsert;

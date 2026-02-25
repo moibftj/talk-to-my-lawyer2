@@ -511,3 +511,72 @@ export async function sendLetterUnlockedEmail(opts: {
     }),
   });
 }
+
+/** Send email verification link to new user */
+export async function sendVerificationEmail(opts: {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}) {
+  const body = `
+    <p>Hello ${opts.name},</p>
+    <p>Thank you for creating an account with <strong>${APP_NAME}</strong>. To complete your registration and start using our service, please verify your email address.</p>
+    <p style="font-size:13px;color:#6B7280;">This link expires in <strong>24 hours</strong>. If you did not create an account, you can safely ignore this email.</p>
+  `;
+  const html = buildEmailHtml({
+    preheader: "Verify your email address to activate your Talk to My Lawyer account.",
+    title: "Verify Your Email Address",
+    body,
+    ctaText: "Verify Email Address",
+    ctaUrl: opts.verifyUrl,
+    footerNote: `You received this email because you signed up for ${APP_NAME}. If this wasn't you, please ignore this email.`,
+  });
+  await sendEmail({
+    to: opts.to,
+    subject: `[${APP_NAME}] Please verify your email address`,
+    html,
+    text: buildPlainText({
+      title: "Verify Your Email Address",
+      body: `Hello ${opts.name}, please verify your email address to activate your account. This link expires in 24 hours.`,
+      ctaText: "Verify Email",
+      ctaUrl: opts.verifyUrl,
+    }),
+  });
+}
+
+/** Send welcome email after successful email verification */
+export async function sendWelcomeEmail(opts: {
+  to: string;
+  name: string;
+  dashboardUrl: string;
+}) {
+  const body = `
+    <p>Hello ${opts.name},</p>
+    <p>Your email has been verified and your account is now fully active. Welcome to <strong>${APP_NAME}</strong>!</p>
+    <p>You can now:</p>
+    <ul style="margin:8px 0;padding-left:20px;font-family:Inter,Arial,sans-serif;font-size:15px;color:#374151;line-height:1.8;">
+      <li>Submit letter requests for attorney review</li>
+      <li>Track the status of your letters in real time</li>
+      <li>Download approved letters as PDFs</li>
+    </ul>
+    <p>Get started by creating your first letter request.</p>
+  `;
+  const html = buildEmailHtml({
+    preheader: "Your account is verified and ready to use.",
+    title: "Welcome to Talk to My Lawyer! 🎉",
+    body,
+    ctaText: "Go to My Dashboard",
+    ctaUrl: opts.dashboardUrl,
+  });
+  await sendEmail({
+    to: opts.to,
+    subject: `[${APP_NAME}] Welcome — your account is ready!`,
+    html,
+    text: buildPlainText({
+      title: "Welcome to Talk to My Lawyer!",
+      body: `Hello ${opts.name}, your email has been verified and your account is now active. Start creating legal letters at:`,
+      ctaText: "Go to Dashboard",
+      ctaUrl: opts.dashboardUrl,
+    }),
+  });
+}

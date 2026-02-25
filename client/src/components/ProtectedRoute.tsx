@@ -26,6 +26,7 @@ export function getRoleDashboard(role: string): string {
  *
  * Behaviour:
  * - Unauthenticated → redirect to /login
+ * - Authenticated but email unverified → redirect to /verify-email (resend form)
  * - Authenticated but wrong role → redirect to the user's correct dashboard
  * - Authenticated + correct role → render children
  */
@@ -44,6 +45,13 @@ export default function ProtectedRoute({
       return;
     }
 
+    // Gate: email must be verified before accessing the app
+    // Admins are always pre-verified; skip gate for them
+    if (user.role !== "admin" && !(user as any).emailVerified) {
+      navigate("/verify-email");
+      return;
+    }
+
     if (allowedRoles && !allowedRoles.includes(user.role as Role)) {
       // Redirect to the user's correct dashboard
       navigate(getRoleDashboard(user.role));
@@ -55,6 +63,11 @@ export default function ProtectedRoute({
   }
 
   if (!isAuthenticated || !user) {
+    return null;
+  }
+
+  // Block unverified users (non-admin)
+  if (user.role !== "admin" && !(user as any).emailVerified) {
     return null;
   }
 

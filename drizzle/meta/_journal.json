@@ -36,6 +36,13 @@
       "when": 1772036560978,
       "tag": "0004_ordinary_smasher",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772048671583,
+      "tag": "0005_low_pride",
+      "breakpoints": true
     }
   ]
 }

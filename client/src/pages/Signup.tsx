@@ -19,6 +19,8 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [signedUpEmail, setSignedUpEmail] = useState("");
 
   const passwordChecks = {
     length: password.length >= 6,
@@ -74,6 +76,13 @@ export default function Signup() {
         return;
       }
 
+      // Handle email verification required
+      if (data.requiresVerification) {
+        setSignedUpEmail(email);
+        setVerificationSent(true);
+        return;
+      }
+
       if (data.needsLogin) {
         toast.success("Account created!", {
           description: "Please sign in with your new credentials.",
@@ -82,7 +91,7 @@ export default function Signup() {
         return;
       }
 
-      // Store the access token
+      // Store the access token (owner auto-login path)
       if (data.session?.access_token) {
         localStorage.setItem("sb_access_token", data.session.access_token);
         localStorage.setItem("sb_refresh_token", data.session.refresh_token || "");
@@ -94,10 +103,7 @@ export default function Signup() {
         description: "Welcome to Talk to My Lawyer.",
       });
 
-      // Clear onboarding flag so the welcome modal shows for new users
       localStorage.removeItem("ttml_onboarding_seen");
-
-      // New signups are always subscribers — go to subscriber dashboard
       navigate("/dashboard");
     } catch (err: any) {
       if (err?.name === 'AbortError') {
@@ -109,6 +115,63 @@ export default function Signup() {
       setLoading(false);
     }
   };
+
+  // Show email-sent confirmation screen
+  if (verificationSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <Link href="/" className="inline-flex items-center gap-2 mb-4">
+              <img
+                src="https://cdn.manus.im/projects/kkQq7ndgQAuTkTV73VVbNP/uploads/logo.png"
+                alt="Talk to My Lawyer"
+                className="w-12 h-12 object-contain"
+              />
+              <span className="text-2xl font-bold text-slate-900">Talk to My Lawyer</span>
+            </Link>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-slate-800 mb-2">Check Your Email</h1>
+            <p className="text-slate-600 mb-2">
+              We sent a verification link to:
+            </p>
+            <p className="font-semibold text-indigo-700 mb-6 break-all">{signedUpEmail}</p>
+            <p className="text-slate-500 text-sm mb-6">
+              Click the link in the email to activate your account. The link expires in 24 hours.
+            </p>
+            <p className="text-slate-400 text-xs mb-4">Didn't receive it? Check your spam folder or</p>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await fetch("/api/auth/resend-verification", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email: signedUpEmail }),
+                  });
+                  const d = await res.json();
+                  toast.success(d.message || "Verification email resent!");
+                } catch {
+                  toast.error("Failed to resend. Please try again.");
+                }
+              }}
+              className="text-indigo-600 hover:underline text-sm font-medium"
+            >
+              resend the verification email
+            </button>
+            <div className="mt-6">
+              <Link href="/login">
+                <Button variant="outline" className="w-full">Back to Sign In</Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">

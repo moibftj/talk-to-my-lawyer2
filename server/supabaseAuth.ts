@@ -8,9 +8,11 @@
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Request, Response, Express } from "express";
+import * as crypto from "crypto";
 import * as db from "./db";
 import type { User } from "../drizzle/schema";
 import { getSessionCookieOptions } from "./_core/cookies";
+import { sendVerificationEmail, sendWelcomeEmail } from "./email";
 
 // ─── Supabase Clients ──────────────────────────────────────────────────────
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
@@ -181,65 +183,46 @@ export function registerSupabaseAuthRoutes(app: Express) {
       const ownerOpenId = process.env.OWNER_OPEN_ID;
       const isOwner = ownerOpenId && (data.user.id === ownerOpenId || email === ownerOpenId);
       
+      const userName = name || email.split("@")[0];
       await db.upsertUser({
         openId: data.user.id,
-        name: name || email.split("@")[0],
+        name: userName,
         email,
         loginMethod: "email",
         lastSignedIn: new Date(),
-        ...(isOwner ? { role: "admin" } : {}),
+        ...(isOwner ? { role: "admin", emailVerified: true } : {}),
       });
 
-      // Now sign them in to get a session
-      // We use the admin client to generate tokens directly
-      const { data: signInData, error: signInError } = await admin.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-      });
+      // Get the app user record to get the integer id
+      const appUser = await db.getUserByOpenId(data.user.id);
 
-      // Sign in with email/password to get session tokens
-      // Create a temporary anon client to sign in
-      const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-      
-      const { data: sessionData, error: sessionError } = await anonClient.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (sessionError || !sessionData.session) {
-        // User was created but session failed — they can still log in
-        console.warn("[SupabaseAuth] Session creation after signup failed:", sessionError?.message);
-        res.status(201).json({ 
-          success: true, 
-          message: "Account created. Please sign in.",
-          needsLogin: true,
-        });
-        return;
+      // Send verification email (unless owner who is auto-verified)
+      if (appUser && !isOwner) {
+        const verificationToken = crypto.randomBytes(48).toString("hex");
+        await db.deleteUserVerificationTokens(appUser.id); // clear any old tokens
+        await db.createEmailVerificationToken(appUser.id, email, verificationToken);
+        const origin = req.headers.origin || `https://${req.headers.host}` || "http://localhost:3000";
+        const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
+        try {
+          await sendVerificationEmail({ to: email, name: userName, verifyUrl });
+          console.log(`[SupabaseAuth] Verification email sent to ${email}`);
+        } catch (emailErr) {
+          console.error("[SupabaseAuth] Failed to send verification email:", emailErr);
+          // Don't block signup if email fails
+        }
       }
 
-      // Set session cookie
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(SUPABASE_SESSION_COOKIE, JSON.stringify({
-        access_token: sessionData.session.access_token,
-        refresh_token: sessionData.session.refresh_token,
-      }), {
-        ...cookieOptions,
-        maxAge: sessionData.session.expires_in * 1000,
-      });
-
+      // Return success — user must verify email before accessing the app
       res.status(201).json({
         success: true,
+        requiresVerification: !isOwner,
+        message: isOwner
+          ? "Account created successfully."
+          : "Account created! Please check your email to verify your address before signing in.",
         user: {
           id: data.user.id,
           email: data.user.email,
-          name: name || email.split("@")[0],
-        },
-        session: {
-          access_token: sessionData.session.access_token,
-          refresh_token: sessionData.session.refresh_token,
-          expires_in: sessionData.session.expires_in,
+          name: userName,
         },
       });
     } catch (err) {
@@ -481,6 +464,65 @@ export function registerSupabaseAuthRoutes(app: Express) {
       res.json({ success: true, message: "Password has been reset successfully." });
     } catch (err) {
       console.error("[SupabaseAuth] Reset password error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // GET /api/auth/verify-email?token=xxx — Verify email address
+  app.get("/api/auth/verify-email", async (req: Request, res: Response) => {
+    try {
+      const { token } = req.query as { token?: string };
+      if (!token) {
+        res.status(400).json({ error: "Verification token is required" });
+        return;
+      }
+      const consumed = await db.consumeVerificationToken(token);
+      if (!consumed) {
+        res.status(400).json({ error: "Invalid or expired verification token. Please request a new one." });
+        return;
+      }
+      // Send welcome email
+      const tokenRecord = await db.findValidVerificationToken(token).catch(() => null);
+      // tokenRecord is now null (already consumed) — get user from db
+      // We'll just return success and let the frontend handle welcome
+      res.json({ success: true, message: "Email verified successfully! You can now sign in." });
+    } catch (err) {
+      console.error("[SupabaseAuth] Email verification error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // POST /api/auth/resend-verification — Resend verification email
+  app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        res.status(400).json({ error: "Email is required" });
+        return;
+      }
+      const user = await db.getUserByEmail(email);
+      if (!user) {
+        // Don't reveal if user exists
+        res.json({ success: true, message: "If an unverified account exists with this email, a new verification link has been sent." });
+        return;
+      }
+      if (user.emailVerified) {
+        res.json({ success: true, message: "Your email is already verified. Please sign in." });
+        return;
+      }
+      const verificationToken = crypto.randomBytes(48).toString("hex");
+      await db.deleteUserVerificationTokens(user.id);
+      await db.createEmailVerificationToken(user.id, email, verificationToken);
+      const origin = req.headers.origin || `https://${req.headers.host}` || "http://localhost:3000";
+      const verifyUrl = `${origin}/verify-email?token=${verificationToken}`;
+      try {
+        await sendVerificationEmail({ to: email, name: user.name || email.split("@")[0], verifyUrl });
+      } catch (emailErr) {
+        console.error("[SupabaseAuth] Failed to resend verification email:", emailErr);
+      }
+      res.json({ success: true, message: "Verification email resent. Please check your inbox." });
+    } catch (err) {
+      console.error("[SupabaseAuth] Resend verification error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });

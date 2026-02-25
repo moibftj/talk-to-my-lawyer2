@@ -547,3 +547,32 @@
 - [x] Investigate signup "unexpected error" — caused by lazy DB init on first request
 - [x] Fix: Added DB warmup on server startup + retry/timeout on login & signup fetch
 - [x] Account for jamilahmansari@gmail.com was already created successfully in Supabase
+
+## Phase 44: Email Verification
+- [ ] Audit existing email/Resend infrastructure
+- [ ] Add email_verified field to users table + migration
+- [ ] Add verification token table (token, userId, expiresAt, usedAt)
+- [ ] Update signup: disable email_confirm auto-confirm, send verification email via Resend
+- [ ] Create GET /api/auth/verify-email?token=... endpoint
+- [ ] Create POST /api/auth/resend-verification endpoint
+- [ ] Create /verify-email page (email-sent confirmation + resend button)
+- [ ] Create /verify-email/confirm page (token verification result)
+- [ ] Gate ProtectedRoute: redirect unverified users to /verify-email
+- [ ] Add routes in App.tsx
+- [ ] Write tests
+
+## Phase 44: Email Verification
+- [x] Add email_verified column to users table (migration applied via run-migration.mjs)
+- [x] Create email_verification_tokens table (userId, email, token, expiresAt)
+- [x] Mark all 4 existing users as email_verified = true (no disruption to existing accounts)
+- [x] Add sendVerificationEmail + sendWelcomeEmail to email.ts (Resend)
+- [x] Add DB helpers: createEmailVerificationToken, deleteUserVerificationTokens, consumeVerificationToken, isEmailVerified, getUserByEmail
+- [x] Update signup handler: send verification email, return requiresVerification:true
+- [x] Add POST /api/auth/verify-email endpoint (consume token, mark verified, send welcome email)
+- [x] Add POST /api/auth/resend-verification endpoint (rate-limited, delete old tokens, send new)
+- [x] Create VerifyEmail.tsx page (handles ?token= from email link, shows success/error/resend UI)
+- [x] Update Signup.tsx: show email-sent confirmation screen after signup (with resend button)
+- [x] Add /verify-email route to App.tsx (public, no auth required)
+- [x] Gate ProtectedRoute: unverified non-admin users redirected to /verify-email
+- [x] Admin role bypasses email verification gate (pre-verified)
+- [x] 18 new Vitest tests passing (token generation, DB helpers, gate logic, email sending)
