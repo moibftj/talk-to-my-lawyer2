@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { LETTER_TYPE_CONFIG } from "../../../../shared/types";
+import { useLetterListRealtime } from "@/hooks/useLetterRealtime";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 // Statuses where the dashboard should auto-refresh
 const ACTIVE_STATUSES = ["submitted", "researching", "drafting", "pending_review", "under_review"];
@@ -172,12 +174,21 @@ function PipelineStepper({ status }: { status: string }) {
 }
 
 export default function SubscriberDashboard() {
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
   const { data: letters, isLoading } = trpc.letters.myLetters.useQuery(undefined, {
     refetchInterval: (query) => {
       const list = query.state.data;
       if (list?.some((l: any) => ACTIVE_STATUSES.includes(l.status))) return 8000;
       return false;
     },
+  });
+
+  // Supabase Realtime — instant updates when any letter changes for this user
+  useLetterListRealtime({
+    userId: user?.id ?? null,
+    onAnyChange: () => utils.letters.myLetters.invalidate(),
+    enabled: !!user?.id,
   });
 
   const stats = {

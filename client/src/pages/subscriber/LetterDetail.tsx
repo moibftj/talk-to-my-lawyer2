@@ -11,6 +11,7 @@ import { Link, useParams, useSearch } from "wouter";
 import { LETTER_TYPE_CONFIG } from "../../../../shared/types";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { useLetterRealtime } from "@/hooks/useLetterRealtime";
 
 // Statuses that require active polling (AI pipeline in progress or awaiting action)
 const POLLING_STATUSES = ["submitted", "researching", "drafting", "pending_review", "under_review"];
@@ -45,6 +46,36 @@ export default function LetterDetail() {
       },
     }
   );
+
+  const utils = trpc.useUtils();
+
+  // Supabase Realtime — instant status updates without polling
+  // Falls back gracefully to polling if Supabase is not configured
+  useLetterRealtime({
+    letterId: letterId || null,
+    enabled: !!letterId,
+    onStatusChange: ({ newStatus }) => {
+      // Invalidate the query to trigger an immediate refetch
+      utils.letters.detail.invalidate({ id: letterId });
+      // Show a toast notification for meaningful transitions
+      const statusLabels: Record<string, string> = {
+        researching: "Researching your legal situation...",
+        drafting: "Drafting your letter...",
+        generated_locked: "Your letter draft is ready!",
+        pending_review: "Sent to attorney review.",
+        under_review: "An attorney is reviewing your letter.",
+        approved: "Your letter has been approved!",
+        rejected: "Your letter request was rejected.",
+        needs_changes: "The attorney has requested changes.",
+      };
+      const label = statusLabels[newStatus];
+      if (label) {
+        if (newStatus === "approved") toast.success(label);
+        else if (newStatus === "rejected" || newStatus === "needs_changes") toast.warning(label);
+        else toast.info(label);
+      }
+    },
+  });
 
   const updateMutation = trpc.letters.updateForChanges.useMutation({
     onSuccess: () => {

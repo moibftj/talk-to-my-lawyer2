@@ -336,3 +336,30 @@
 - [x] Fix PostgreSQL-specific syntax: serial PKs, timestamptz, updated_at trigger function, onConflictDoUpdate
 - [x] Run all tests: 164/164 passing, 0 TypeScript errors, 11 new migration tests
 - [x] Server log: [Database] Connected to Supabase (PostgreSQL)
+
+## Phase 34: Supabase-Native Enhancements
+
+### RLS Policies (defense-in-depth, layered on top of existing tRPC guards)
+- [x] Enable RLS on all 9 application tables
+- [x] Create 5 helper functions: app_user_id(), is_app_admin(), is_app_attorney(), is_app_employee(), safe_status_transition()
+- [x] Create 25 RLS policies across all tables (subscriber isolation, admin/attorney access, employee scope)
+- [x] Add 3 partial performance indexes (active letters, pending review, user active letters)
+
+### Database-Level Atomic Functions
+- [x] check_and_deduct_allowance() — race-safe subscription deduction with row locking
+- [x] refund_letter_allowance() — atomic refund on pipeline failure
+- [x] safe_status_transition() — validates status machine at DB level
+- [x] reset_monthly_allowance() — monthly credit reset
+- [x] log_letter_status_change() — audit trigger function
+
+### Supabase Realtime (replace polling with live updates)
+- [x] Install @supabase/supabase-js client
+- [x] Create client/src/lib/supabase.ts singleton with channel registry
+- [x] Create useLetterRealtime, useLetterListRealtime, useReviewQueueRealtime hooks
+- [x] Integrate Realtime into subscriber LetterDetail (instant status toasts + tRPC invalidation)
+- [x] Integrate Realtime into subscriber Dashboard (live letter list updates)
+- [x] Integrate Realtime into employee ReviewQueue (instant queue refresh)
+- [x] All hooks fall back gracefully to polling if Supabase is not configured
+
+### Tests
+- [x] Run all tests: 174/174 passing, 0 TypeScript errors

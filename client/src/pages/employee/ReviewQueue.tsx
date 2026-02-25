@@ -7,10 +7,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Search, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { LETTER_TYPE_CONFIG } from "../../../../shared/types";
+import { useReviewQueueRealtime } from "@/hooks/useLetterRealtime";
 
 export default function ReviewQueue() {
+  const utils = trpc.useUtils();
+
+  // Supabase Realtime — instant queue updates when any letter status changes
+  useReviewQueueRealtime({
+    onAnyChange: () => utils.review.queue.invalidate(),
+    enabled: true,
+  });
+
   const { data: letters, isLoading } = trpc.review.queue.useQuery({}, {
-    refetchInterval: 10000,
+    refetchInterval: 15000, // Fallback polling if Realtime is unavailable
   });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("active");
