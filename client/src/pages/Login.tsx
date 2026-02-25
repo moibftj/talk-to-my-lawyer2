@@ -34,7 +34,9 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "Login failed");
+        const msg = data.error || "Login failed. Please check your credentials.";
+        setError(msg);
+        toast.error(msg);
         setLoading(false);
         return;
       }
@@ -58,7 +60,9 @@ export default function Login() {
       else if (role === "employee") navigate("/review");
       else navigate("/dashboard");
     } catch (err) {
-      setError("An unexpected error occurred. Please try again.");
+      const msg = "An unexpected error occurred. Please try again.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

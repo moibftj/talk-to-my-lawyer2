@@ -454,3 +454,12 @@
   - n8n only activates if BOTH N8N_PRIMARY=true AND N8N_WEBHOOK_URL are set in env
   - N8N_PRIMARY is NOT set → n8n is completely dormant
   - Full details: docs/PIPELINE_ARCHITECTURE.md
+
+## Phase 39: Toast Notifications Audit
+
+- [x] ForgotPassword: add toast.error on network failure
+- [x] Login: add toast.error on failed login (now shows both inline error + toast)
+- [x] AppLayout: add toast.success/error on markAllRead mutation
+- [x] AppLayout: add toast.info on logout
+- [x] OnboardingModal: add toast.success when user finishes onboarding and clicks "Submit Your First Letter"
+- [x] Run tests, save checkpoint

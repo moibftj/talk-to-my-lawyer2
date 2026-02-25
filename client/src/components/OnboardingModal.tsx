@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -80,11 +81,16 @@ export default function OnboardingModal({ forceShow, onDismiss }: OnboardingModa
     onDismiss?.();
   };
 
+  const handleFinish = () => {
+    handleDismiss();
+    toast.success("You're all set! Submit your first letter to get started.");
+  };
+
   const handleNext = () => {
     if (step < STEPS.length - 1) {
       setStep((s) => s + 1);
     } else {
-      handleDismiss();
+      handleFinish();
     }
   };
 
@@ -155,7 +161,7 @@ export default function OnboardingModal({ forceShow, onDismiss }: OnboardingModa
               <Button
                 asChild
                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={handleDismiss}
+                onClick={handleFinish}
               >
                 <Link href="/submit">
                   Submit Your First Letter

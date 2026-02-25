@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,14 +17,20 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      await fetch("/api/auth/forgot-password", {
+      const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      // Always show success to prevent email enumeration
+      if (!res.ok) {
+        // Network responded but with an error — still show sent screen to prevent enumeration
+        // but also notify the user something went wrong
+        toast.error("Something went wrong. Please try again.");
+      }
+      // Always show success screen to prevent email enumeration
       setSent(true);
     } catch {
+      toast.error("Network error. Please check your connection and try again.");
       setSent(true);
     } finally {
       setLoading(false);

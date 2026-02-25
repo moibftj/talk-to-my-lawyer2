@@ -84,7 +84,10 @@ export default function AppLayout({ children, title, breadcrumb }: AppLayoutProp
     { unreadOnly: true },
     { enabled: isAuthenticated, refetchInterval: 30000 }
   );
-  const markAllRead = trpc.notifications.markAllRead.useMutation();
+  const markAllRead = trpc.notifications.markAllRead.useMutation({
+    onSuccess: () => toast.success("All notifications marked as read"),
+    onError: () => toast.error("Failed to mark notifications as read"),
+  });
   const unreadCount = notifications?.length ?? 0;
 
   if (!isAuthenticated || !user) {
@@ -169,7 +172,7 @@ export default function AppLayout({ children, title, breadcrumb }: AppLayoutProp
       {/* Logout */}
       <div className="p-3 border-t border-sidebar-border">
         <button
-          onClick={() => logout()}
+          onClick={() => { toast.info("Signing out..."); logout(); }}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent w-full transition-colors"
         >
           <LogOut className="w-4 h-4" />

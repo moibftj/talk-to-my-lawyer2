@@ -130,7 +130,7 @@ export async function createLetterRequest(data: {
     status: "submitted",
     priority: data.priority ?? "normal",
     lastStatusChangedAt: new Date(),
-  });
+  }).returning({ insertId: letterRequests.id });
   return result[0];
 }
 
@@ -257,7 +257,7 @@ export async function createLetterVersion(data: {
     createdByType: data.createdByType,
     createdByUserId: data.createdByUserId,
     metadataJson: data.metadataJson as any,
-  });
+  }).returning({ insertId: letterVersions.id });
   return result[0];
 }
 
@@ -342,7 +342,7 @@ export async function createWorkflowJob(data: {
     status: "queued",
     attemptCount: 0,
     requestPayloadJson: data.requestPayloadJson as any,
-  });
+  }).returning({ insertId: workflowJobs.id });
   return result[0];
 }
 
@@ -409,7 +409,7 @@ export async function createResearchRun(data: {
     provider: data.provider ?? "perplexity",
     status: "queued",
     queryPlanJson: data.queryPlanJson as any,
-  });
+  }).returning({ insertId: researchRuns.id });
   return result[0];
 }
 
@@ -462,7 +462,7 @@ export async function createAttachment(data: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const result = await db.insert(attachments).values(data);
+  const result = await db.insert(attachments).values(data).returning({ insertId: attachments.id });
   return result[0];
 }
 
