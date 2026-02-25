@@ -101,6 +101,7 @@ export default function LetterDetail() {
 
   const { letter, actions, versions, attachments } = data;
   const finalVersion = versions?.find((v) => v.versionType === "final_approved");
+  const aiDraftVersion = versions?.find((v) => v.versionType === "ai_draft");
   const userVisibleActions = actions?.filter((a) => a.noteVisibility === "user_visible" && a.noteText);
   const isPolling = POLLING_STATUSES.includes(letter.status);
   const isGeneratedLocked = letter.status === "generated_locked";
@@ -157,6 +158,7 @@ export default function LetterDetail() {
             letterId={letterId}
             letterType={letter.letterType}
             subject={letter.subject}
+            draftContent={aiDraftVersion?.content ?? undefined}
           />
         )}
 

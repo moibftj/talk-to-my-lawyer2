@@ -255,3 +255,10 @@
 - [x] Unstick letter #1 and verify end-to-end pipeline flow
 - [x] Switch pipeline from Forge proxy to direct Anthropic SDK + Perplexity API
 - [x] Add proper timeouts (AbortSignal) to all AI calls
+
+## Phase 26: Letter Display Modal + Attorney Review Payment Flow
+- [x] Fix AI draft data display in subscriber letter detail (show research + draft in modal)
+- [x] First letter is free — implement free tier logic
+- [x] $200 fee for attorney review submission via Stripe
+- [x] Add 'Submit for Attorney Review' button at top of letter modal
+- [x] Ensure generated_locked status shows the draft preview correctly

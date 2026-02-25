@@ -3,9 +3,11 @@
  * Talk-to-My-Lawyer — Legal Letter Generation Platform
  *
  * Plans:
- *  per_letter  — $29 one-time per letter (pay-as-you-go)
+ *  per_letter  — $200 one-time per letter (pay-as-you-go)
  *  monthly     — $79/month unlimited letters
  *  annual      — $599/year (50 letters/year, ~$12/letter)
+ *
+ * First letter is FREE — no payment required for the first attorney review.
  */
 
 export interface PlanConfig {
@@ -19,12 +21,15 @@ export interface PlanConfig {
   features: string[];
 }
 
+/** Price in cents for a single letter unlock (attorney review) */
+export const LETTER_UNLOCK_PRICE_CENTS = 20000; // $200
+
 export const PLANS: Record<string, PlanConfig> = {
   per_letter: {
     id: "per_letter",
     name: "Pay Per Letter",
     description: "One professional legal letter, no commitment",
-    price: 2900, // $29
+    price: LETTER_UNLOCK_PRICE_CENTS, // $200
     interval: "one_time",
     lettersAllowed: 1,
     features: [

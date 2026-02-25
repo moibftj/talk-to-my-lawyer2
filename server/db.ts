@@ -249,9 +249,12 @@ export async function getLetterVersionsByRequestId(letterRequestId: number, incl
   if (includeInternal) {
     return db.select().from(letterVersions).where(eq(letterVersions.letterRequestId, letterRequestId)).orderBy(desc(letterVersions.createdAt));
   }
-  // Subscriber-safe: only return final_approved versions
+  // Subscriber-safe: return final_approved + ai_draft (for generated_locked preview)
   return db.select().from(letterVersions).where(
-    and(eq(letterVersions.letterRequestId, letterRequestId), eq(letterVersions.versionType, "final_approved"))
+    and(
+      eq(letterVersions.letterRequestId, letterRequestId),
+      inArray(letterVersions.versionType, ["final_approved", "ai_draft"])
+    )
   ).orderBy(desc(letterVersions.createdAt));
 }
 
