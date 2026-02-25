@@ -270,3 +270,7 @@
 
 ## Phase 28: Stripe Payment Method Fix
 - [x] Fix 'No valid payment method types' error on Stripe checkout (add payment_method_types: ['card'])
+
+## Phase 29: Favicon & Logo Branding
+- [x] Set VITE_APP_LOGO to Talk-to-My-Lawyer logo for Manus OAuth login page (manual: Settings → General)
+- [x] Ensure website favicon matches the logo (added to index.html)
