@@ -3,6 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 // Auth pages
@@ -13,6 +14,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 // Public pages
 import Home from "./pages/Home";
 import Pricing from "./pages/Pricing";
+import FAQ from "./pages/FAQ";
 
 // Subscriber pages
 import SubscriberDashboard from "./pages/subscriber/Dashboard";
@@ -39,30 +41,83 @@ function Router() {
       {/* Public */}
       <Route path="/" component={Home} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/faq" component={FAQ} />
 
       {/* Auth */}
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/forgot-password" component={ForgotPassword} />
 
-      {/* Subscriber */}
-      <Route path="/dashboard" component={SubscriberDashboard} />
-      <Route path="/submit" component={SubmitLetter} />
-      <Route path="/letters" component={MyLetters} />
-      <Route path="/letters/:id" component={LetterDetail} />
-      <Route path="/subscriber/billing" component={Billing} />
+      {/* Subscriber — role-gated */}
+      <Route path="/dashboard">
+        <ProtectedRoute allowedRoles={["subscriber"]}>
+          <SubscriberDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/submit">
+        <ProtectedRoute allowedRoles={["subscriber"]}>
+          <SubmitLetter />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/letters">
+        <ProtectedRoute allowedRoles={["subscriber"]}>
+          <MyLetters />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/letters/:id">
+        <ProtectedRoute allowedRoles={["subscriber"]}>
+          <LetterDetail />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/subscriber/billing">
+        <ProtectedRoute allowedRoles={["subscriber"]}>
+          <Billing />
+        </ProtectedRoute>
+      </Route>
 
-      {/* Employee / Attorney */}
-      <Route path="/review" component={EmployeeDashboard} />
-      <Route path="/review/queue" component={ReviewQueue} />
-      <Route path="/review/:id" component={ReviewDetail} />
+      {/* Employee / Attorney — role-gated */}
+      <Route path="/review">
+        <ProtectedRoute allowedRoles={["employee", "admin"]}>
+          <EmployeeDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/review/queue">
+        <ProtectedRoute allowedRoles={["employee", "admin"]}>
+          <ReviewQueue />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/review/:id">
+        <ProtectedRoute allowedRoles={["employee", "admin"]}>
+          <ReviewDetail />
+        </ProtectedRoute>
+      </Route>
 
-      {/* Admin */}
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/users" component={AdminUsers} />
-      <Route path="/admin/jobs" component={AdminJobs} />
-      <Route path="/admin/letters" component={AdminAllLetters} />
-      <Route path="/admin/letters/:id" component={AdminLetterDetail} />
+      {/* Admin — role-gated */}
+      <Route path="/admin">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminDashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/users">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminUsers />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/jobs">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminJobs />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/letters">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminAllLetters />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/admin/letters/:id">
+        <ProtectedRoute allowedRoles={["admin"]}>
+          <AdminLetterDetail />
+        </ProtectedRoute>
+      </Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

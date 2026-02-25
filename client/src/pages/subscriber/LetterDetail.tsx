@@ -93,7 +93,17 @@ export default function LetterDetail() {
     updateMutation.mutate({ letterId, additionalContext: updateText });
   };
 
-  const handleDownload = () => {
+  const handleDownloadPdf = () => {
+    // If server-generated PDF exists, download it directly
+    if (data?.letter?.pdfUrl) {
+      window.open(data.letter.pdfUrl, "_blank");
+      return;
+    }
+    // Fallback to browser print dialog
+    handleDownloadFallback();
+  };
+
+  const handleDownloadFallback = () => {
     if (!data?.versions) return;
     const finalVersion = data.versions.find((v) => v.versionType === "final_approved");
     if (!finalVersion) return;
@@ -214,9 +224,9 @@ export default function LetterDetail() {
               </div>
             </div>
             {letter.status === "approved" && finalVersion && (
-              <Button onClick={handleDownload} size="sm" className="flex-shrink-0">
+              <Button onClick={handleDownloadPdf} size="sm" className="flex-shrink-0">
                 <Download className="w-4 h-4 mr-2" />
-                Download
+                {(data?.letter as any)?.pdfUrl ? "Download PDF" : "Download"}
               </Button>
             )}
           </div>
@@ -308,9 +318,9 @@ export default function LetterDetail() {
                   <CheckCircle className="w-4 h-4" />
                   Final Approved Letter
                 </CardTitle>
-                <Button onClick={handleDownload} size="sm" variant="outline" className="bg-background border-green-300 text-green-700 hover:bg-green-50">
+                <Button onClick={handleDownloadPdf} size="sm" variant="outline" className="bg-background border-green-300 text-green-700 hover:bg-green-50">
                   <Download className="w-3.5 h-3.5 mr-1.5" />
-                  Download
+                  {(data?.letter as any)?.pdfUrl ? "Download PDF" : "Download"}
                 </Button>
               </div>
             </CardHeader>

@@ -163,6 +163,7 @@ export async function getLetterRequestSafeForSubscriber(id: number, userId: numb
     status: letterRequests.status,
     priority: letterRequests.priority,
     currentFinalVersionId: letterRequests.currentFinalVersionId,
+    pdfUrl: letterRequests.pdfUrl,
     lastStatusChangedAt: letterRequests.lastStatusChangedAt,
     createdAt: letterRequests.createdAt,
     updatedAt: letterRequests.updatedAt,
@@ -227,6 +228,12 @@ export async function claimLetterForReview(letterId: number, reviewerId: number)
     lastStatusChangedAt: new Date(),
     updatedAt: new Date(),
   }).where(eq(letterRequests.id, letterId));
+}
+
+export async function updateLetterPdfUrl(id: number, pdfUrl: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(letterRequests).set({ pdfUrl, updatedAt: new Date() } as any).where(eq(letterRequests.id, id));
 }
 
 // ═══════════════════════════════════════════════════════

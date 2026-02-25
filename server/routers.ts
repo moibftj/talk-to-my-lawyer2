@@ -33,6 +33,7 @@ import {
   updateUserRole,
   getUserById,
   purgeFailedJobs,
+  updateLetterPdfUrl,
 } from "./db";
 import {
   sendJobFailedAlertEmail,
@@ -43,8 +44,10 @@ import {
   sendLetterSubmissionEmail,
   sendLetterReadyEmail,
   sendLetterUnlockedEmail,
+  sendStatusUpdateEmail,
 } from "./email";
 import { runFullPipeline, retryPipelineFromStage } from "./pipeline";
+import { generateAndUploadApprovedPdf } from "./pdfGenerator";
 import { storagePut } from "./storage";
 import {
   createCheckoutSession,
@@ -338,6 +341,28 @@ export const appRouter = router({
           fromStatus: letter.status,
           toStatus: "under_review",
         });
+        // ── Notify subscriber: letter is now under attorney review ──
+        try {
+          const subscriber = await getUserById(letter.userId);
+          const appUrl = getAppUrl(ctx.req);
+          if (subscriber?.email) {
+            await sendStatusUpdateEmail({
+              to: subscriber.email,
+              name: subscriber.name ?? "Subscriber",
+              subject: letter.subject,
+              letterId: input.letterId,
+              newStatus: "under_review",
+              appUrl,
+            });
+          }
+          await createNotification({
+            userId: letter.userId,
+            type: "letter_under_review",
+            title: "Your letter is being reviewed",
+            body: `An attorney has claimed your letter "${letter.subject}" and is currently reviewing it.`,
+            link: `/letters/${input.letterId}`,
+          });
+        } catch (err) { console.error("[Notify] Claim notification failed:", err); }
         return { success: true };
       }),
 
@@ -376,15 +401,42 @@ export const appRouter = router({
             noteText: input.userVisibleNote, noteVisibility: "user_visible",
           });
         }
+        // ── Generate PDF, upload to S3, store URL ──
+        let pdfUrl: string | undefined;
+        try {
+          const pdfResult = await generateAndUploadApprovedPdf({
+            letterId: input.letterId,
+            letterType: letter.letterType,
+            subject: letter.subject,
+            content: input.finalContent,
+            approvedBy: ctx.user.name ?? undefined,
+            approvedAt: new Date().toISOString(),
+            jurisdictionState: letter.jurisdictionState,
+            jurisdictionCountry: letter.jurisdictionCountry,
+          });
+          pdfUrl = pdfResult.pdfUrl;
+          await updateLetterPdfUrl(input.letterId, pdfUrl);
+          console.log(`[Approve] PDF generated for letter #${input.letterId}: ${pdfUrl}`);
+        } catch (pdfErr) {
+          console.error(`[Approve] PDF generation failed for letter #${input.letterId}:`, pdfErr);
+          // Non-blocking: approval still succeeds even if PDF fails
+        }
+        // ── Notify subscriber with PDF link ──
         try {
           const appUrl = getAppUrl(ctx.req);
           const subscriber = await getUserById(letter.userId);
           if (subscriber?.email) {
-            await sendLetterApprovedEmail({ to: subscriber.email, name: subscriber.name ?? "Subscriber", subject: letter.subject, letterId: input.letterId, appUrl });
+            await sendLetterApprovedEmail({ to: subscriber.email, name: subscriber.name ?? "Subscriber", subject: letter.subject, letterId: input.letterId, appUrl, pdfUrl });
           }
-          await createNotification({ userId: letter.userId, type: "letter_approved", title: "Your letter has been approved!", body: `Your letter "${letter.subject}" is ready to download.`, link: `/letters/${input.letterId}` });
+          await createNotification({
+            userId: letter.userId,
+            type: "letter_approved",
+            title: "Your letter has been approved!",
+            body: `Your letter "${letter.subject}" is ready to download.${pdfUrl ? " A PDF copy is available." : ""}`,
+            link: `/letters/${input.letterId}`,
+          });
         } catch (err) { console.error("[Notify] Failed:", err); }
-        return { success: true, versionId };
+        return { success: true, versionId, pdfUrl };
       }),
 
     reject: employeeProcedure

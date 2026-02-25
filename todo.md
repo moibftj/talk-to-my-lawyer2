@@ -406,3 +406,41 @@
 - [x] Add meta description: 148 chars — covers demand letters, cease and desist, breach of contract, starting at $29
 - [x] Add meta keywords: legal letters, attorney reviewed, demand letter, cease and desist, breach of contract, AI legal
 - [x] Push all changes to GitHub
+
+## Phase 37: Role-Based Routes, Onboarding, FAQ, Mobile
+- [x] Build ProtectedRoute component with role-based access (subscriber/employee/admin)
+- [x] Wrap all role-gated routes in App.tsx with ProtectedRoute
+- [x] Redirect unauthenticated users to /login, wrong-role users to their correct dashboard
+- [x] Build onboarding welcome modal for new subscribers (first-login detection)
+- [x] Add guided steps banner on subscriber dashboard (3 steps: Submit → Review → Download)
+- [x] Add "Get Started" onboarding CTA on empty state
+- [x] Add real FAQ content to homepage (10+ Q&A items covering pricing, process, turnaround, legal validity)
+- [x] Create /faq dedicated page with full FAQ list and structured data (JSON-LD)
+- [x] Fix mobile nav: hamburger menu for small screens
+- [ ] Fix mobile dashboard: stack cards vertically, full-width buttons
+- [ ] Fix mobile letter cards: truncate long text, responsive status badges
+- [ ] Fix login/signup forms: full-width on mobile, proper input sizing
+- [ ] Fix ReviewModal: full-screen on mobile, collapsible sidebar panel
+- [x] Run tests, save checkpoint, push to GitHub
+
+## Phase 38: Admin Review Modal — Full Pipeline Sync + PDF Generation
+
+### Claim → Subscriber Notification
+- [x] Add email notification to subscriber when attorney claims letter (under_review)
+- [x] Add in-app notification to subscriber when letter moves to under_review
+- [x] Update claim mutation in routers.ts to send sendStatusUpdateEmail + createNotification
+
+### Approve → PDF Generation + S3 Upload + Delivery
+- [x] Install pdfkit for server-side PDF generation
+- [x] Add pdfUrl column to letter_requests table (schema + migration)
+- [x] Build server/pdfGenerator.ts: convert final approved letter content to professional PDF
+- [x] Upload generated PDF to S3 via storagePut
+- [x] Store pdfUrl in letter_requests on approval
+- [x] Update approve mutation: generate PDF → upload S3 → store URL → notify subscriber with PDF link
+- [x] Update subscriber LetterDetail: show "Download PDF" button when pdfUrl is available
+- [x] Update sendLetterApprovedEmail to include PDF download link
+
+### Tests
+- [x] Write vitest tests for PDF generation, claim notification, approve workflow (30 tests pass)
+- [x] Verify TypeScript compiles cleanly
+- [x] Save checkpoint

@@ -122,6 +122,7 @@ export const letterRequests = pgTable("letter_requests", {
   assignedReviewerId: integer("assigned_reviewer_id"),
   currentAiDraftVersionId: integer("current_ai_draft_version_id"),
   currentFinalVersionId: integer("current_final_version_id"),
+  pdfUrl: text("pdf_url"),
   priority: priorityEnum("priority").default("normal").notNull(),
   lastStatusChangedAt: timestamp("last_status_changed_at", { withTimezone: true }).defaultNow(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

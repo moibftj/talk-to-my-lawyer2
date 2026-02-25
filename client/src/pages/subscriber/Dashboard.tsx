@@ -1,5 +1,6 @@
 import AppLayout from "@/components/shared/AppLayout";
 import StatusBadge from "@/components/shared/StatusBadge";
+import OnboardingModal from "@/components/OnboardingModal";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -204,6 +205,8 @@ export default function SubscriberDashboard() {
 
   return (
     <AppLayout breadcrumb={[{ label: "Dashboard" }]}>
+      {/* Onboarding modal — shown once for new subscribers */}
+      <OnboardingModal />
       <div className="space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-primary to-primary/80 rounded-2xl p-6 text-primary-foreground">

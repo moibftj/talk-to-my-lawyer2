@@ -52,8 +52,11 @@ export default function Login() {
         description: "You have been signed in successfully.",
       });
 
-      // Redirect to dashboard
-      navigate("/dashboard");
+      // Role-based redirect
+      const role = data.user?.role ?? data.session?.user?.user_metadata?.role ?? "subscriber";
+      if (role === "admin") navigate("/admin");
+      else if (role === "employee") navigate("/review");
+      else navigate("/dashboard");
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");
     } finally {

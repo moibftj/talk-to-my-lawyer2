@@ -8,6 +8,13 @@
       "when": 1771993465162,
       "tag": "0000_nervous_james_howlett",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771998031029,
+      "tag": "0001_awesome_vindicator",
+      "breakpoints": true
     }
   ]
 }

@@ -76,6 +76,10 @@ export default function Signup() {
         description: "Welcome to Talk to My Lawyer.",
       });
 
+      // Clear onboarding flag so the welcome modal shows for new users
+      localStorage.removeItem("ttml_onboarding_seen");
+
+      // New signups are always subscribers — go to subscriber dashboard
       navigate("/dashboard");
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

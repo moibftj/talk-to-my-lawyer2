@@ -1,7 +1,13 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { useLocation } from "wouter";
-import { useEffect } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { useLocation, Link } from "wouter";
+import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   ArrowRight,
@@ -13,6 +19,9 @@ import {
   Copy,
   Share2,
   History,
+  HelpCircle,
+  Menu,
+  X,
 } from "lucide-react";
 
 const LOGO_URL =
@@ -45,6 +54,7 @@ export default function Home() {
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-white">
@@ -75,19 +85,64 @@ export default function Home() {
               Pricing
             </button>
             <button
+              onClick={() => scrollTo("faq")}
+              className="text-slate-600 hover:text-slate-900 text-sm font-medium hidden sm:block"
+            >
+              FAQ
+            </button>
+            <button
               onClick={goToLogin}
               className="text-slate-600 hover:text-slate-900 text-sm font-medium hidden sm:block"
             >
               Sign In
             </button>
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 h-9 text-sm font-semibold flex items-center gap-2"
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 h-9 text-sm font-semibold hidden sm:flex items-center gap-2"
               onClick={goToLogin}
             >
               Get Started <ArrowRight className="w-4 h-4" />
             </Button>
+            {/* Mobile hamburger */}
+            <button
+              className="sm:hidden p-2 text-slate-600 hover:text-slate-900"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="sm:hidden bg-white border-t border-slate-200 px-4 py-4 space-y-3">
+            <button
+              onClick={() => { scrollTo("features"); setMobileMenuOpen(false); }}
+              className="block w-full text-left text-slate-700 text-sm font-medium py-2 hover:text-blue-600"
+            >
+              Features
+            </button>
+            <button
+              onClick={() => { scrollTo("pricing"); setMobileMenuOpen(false); }}
+              className="block w-full text-left text-slate-700 text-sm font-medium py-2 hover:text-blue-600"
+            >
+              Pricing
+            </button>
+            <button
+              onClick={() => { scrollTo("faq"); setMobileMenuOpen(false); }}
+              className="block w-full text-left text-slate-700 text-sm font-medium py-2 hover:text-blue-600"
+            >
+              FAQ
+            </button>
+            <div className="pt-2 flex flex-col gap-2">
+              <Button variant="outline" className="w-full" onClick={goToLogin}>
+                Sign In
+              </Button>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={goToLogin}>
+                Get Started
+              </Button>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero */}
@@ -152,9 +207,9 @@ export default function Home() {
               size="lg"
               variant="outline"
               className="border-slate-300 text-slate-700 hover:bg-white px-8 h-12 text-base font-semibold rounded-xl flex items-center gap-2 bg-white/60"
-              onClick={() => scrollTo("features")}
+              onClick={() => scrollTo("faq")}
             >
-              <FileText className="w-4 h-4" /> View FAQs{" "}
+              <HelpCircle className="w-4 h-4" /> View FAQs{" "}
               <ArrowRight className="w-4 h-4" />
             </Button>
           </div>
@@ -418,7 +473,79 @@ export default function Home() {
           </Button>
         </div>
       </section>
-
+      {/* FAQ Section */}
+      <section id="faq" className="py-24 px-4 bg-white">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-sm font-medium px-4 py-1.5 rounded-full mb-4">
+              <HelpCircle className="w-4 h-4" />
+              FAQ
+            </div>
+            <h2 className="text-4xl font-bold text-slate-900 mb-3">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-slate-500 text-lg">
+              Everything you need to know about our legal letter service
+            </p>
+          </div>
+          <Accordion type="single" collapsible className="space-y-3">
+            {[
+              {
+                q: "What is Talk to My Lawyer?",
+                a: "Talk to My Lawyer is an AI-powered legal letter drafting service with mandatory attorney review. You submit your legal matter, our AI researches applicable laws and drafts a professional letter, and then a licensed attorney reviews, edits, and approves the final document.",
+              },
+              {
+                q: "How much does a letter cost?",
+                a: "A single attorney-reviewed legal letter costs $200. This covers AI-powered legal research, professional letter drafting, licensed attorney review and editing, and a downloadable PDF of the final approved letter. We also offer subscription plans for multiple letters per month.",
+              },
+              {
+                q: "How long does it take to receive my letter?",
+                a: "Most letters are delivered within 24\u201348 hours of payment. The AI drafting stage typically completes within 2\u20135 minutes. Attorney review is the primary variable \u2014 attorneys aim to complete reviews within 24 hours during business days.",
+              },
+              {
+                q: "Are these letters legally valid?",
+                a: "Yes. All letters are reviewed and approved by licensed attorneys. They are professionally drafted legal correspondence you can use in real-world situations. However, a legal letter is not a court filing or legal judgment \u2014 it is formal written communication that asserts your legal position.",
+              },
+              {
+                q: "What types of legal letters can I get?",
+                a: "We support Demand Letters, Cease and Desist Notices, Contract Breach Letters, Eviction Notices, Employment Dispute Letters, Consumer Complaint Letters, and General Legal Correspondence. More letter types are added regularly.",
+              },
+              {
+                q: "Who reviews my letter?",
+                a: "Every letter is reviewed by a licensed attorney before delivery. Attorneys review the AI-generated draft, make any necessary edits, and either approve, reject, or request changes. You only receive a letter that has been explicitly approved by a licensed attorney.",
+              },
+              {
+                q: "Can I see the AI draft before paying?",
+                a: "Yes. After the AI completes drafting, you can preview a partially blurred version of your letter. To unlock the full letter and submit it for attorney review, you pay the $200 fee at that point.",
+              },
+              {
+                q: "Is my information confidential?",
+                a: "Absolutely. All information you provide is treated as confidential. We use industry-standard encryption for data in transit and at rest. Attorneys who review your letters are bound by professional confidentiality obligations.",
+              },
+            ].map((item, idx) => (
+              <AccordionItem
+                key={idx}
+                value={`faq-${idx}`}
+                className="border border-slate-200 rounded-xl px-5 data-[state=open]:border-blue-200 data-[state=open]:bg-blue-50/30 transition-colors"
+              >
+                <AccordionTrigger className="text-left text-sm font-semibold text-slate-900 hover:no-underline py-4">
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-sm text-slate-600 leading-relaxed pb-4">
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+          <div className="text-center mt-10">
+            <Button asChild variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+              <Link href="/faq">
+                View All FAQs <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
       {/* Footer */}
       <footer className="bg-slate-900 py-8 px-4">
         <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -432,9 +559,13 @@ export default function Home() {
               Talk to My Lawyer
             </span>
           </div>
+          <div className="flex items-center gap-6 text-slate-400 text-sm">
+            <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+            <Link href="/faq" className="hover:text-white transition-colors">FAQ</Link>
+            <button onClick={goToLogin} className="hover:text-white transition-colors">Sign In</button>
+          </div>
           <p className="text-slate-500 text-sm">
-            &copy; {new Date().getFullYear()} Talk to My Lawyer. Professional
-            legal letter services.
+            &copy; {new Date().getFullYear()} Talk to My Lawyer.
           </p>
         </div>
       </footer>
