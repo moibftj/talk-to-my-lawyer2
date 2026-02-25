@@ -615,3 +615,47 @@
 - [x] Update LetterPaywall.tsx: show subscription upsell card prominently when state is pay_per_letter
 - [x] Keep $200 pay-per-letter option as secondary option (not the only option)
 - [x] Write tests for the three paywall states
+
+## Phase 48: Master Validation — TTML_REMAINING_FEATURES_PROMPT.md
+> **Canonical reference:** `docs/TTML_REMAINING_FEATURES_PROMPT.md`
+> All future implementation work MUST be validated against this document before delivery.
+
+### Gap 1 — Freemium `generated_unlocked` Status (Phase 22 — HIGHEST COMPLEXITY)
+- [ ] Add `generated_unlocked` to `letterStatusEnum` pgEnum and `LETTER_STATUSES` const in `drizzle/schema.ts`
+- [ ] Add `generated_unlocked` transitions to `ALLOWED_TRANSITIONS` in `shared/types.ts`
+- [ ] Add `generated_unlocked` to `STATUS_CONFIG` in `shared/types.ts`
+- [ ] Update pipeline Stage 3: first-ever letter → `generated_unlocked`, returning user → `generated_locked`
+- [ ] Add `billing.sendForReview` tRPC mutation (generated_unlocked → pending_review, free)
+- [ ] Update `billing.freeUnlock` — remove first-letter eligibility check (logic now in pipeline)
+- [ ] Update `LetterDetail.tsx`: show full ai_draft + green banner + Send for Review CTA when `generated_unlocked`
+- [ ] Extend `versions.get` to allow `ai_draft` access when status is `generated_unlocked`
+- [ ] Update `StatusBadge.tsx`: add `generated_unlocked` = "AI Draft Ready" (green)
+- [ ] Update `StatusTimeline.tsx`: insert `generated_unlocked` step between `generated_locked` and `pending_review`
+- [ ] Update `MyLetters.tsx`: green "AI Draft Ready — Review for $200" badge for `generated_unlocked`
+- [ ] Generate migration SQL via `pnpm drizzle-kit generate` and apply via Supabase MCP
+
+### Gap 2 — Payment Receipts Page (`/subscriber/receipts`)
+- [ ] Add `billing.receipts` tRPC query (Stripe invoices list for current user)
+- [ ] Build `client/src/pages/subscriber/Receipts.tsx` page
+- [ ] Register route in `client/src/App.tsx` with `ProtectedRoute allowedRoles=["subscriber"]`
+- [ ] Add "View Payment History" link in `Billing.tsx` (replace Stripe portal section)
+- [ ] Add "Receipts" nav item in `AppLayout.tsx` sidebar for subscriber role
+
+### Gap 3 — Intake Form: Missing Fields (`language`, `communications`)
+- [ ] Update `IntakeJson` in `shared/types.ts`: add `language`, `communications`, `toneAndDelivery`
+- [ ] Update `intake-normalizer.ts`: handle new fields in `buildNormalizedPromptInput`
+- [ ] Update `letters.submit` Zod schema in `server/routers.ts`: add new optional fields
+- [ ] Update `SubmitLetter.tsx`: replace `tonePreference` with `toneAndDelivery` (tone + delivery method)
+- [ ] Update `SubmitLetter.tsx`: add Prior Communications step (summary, lastContactDate, method)
+- [ ] Update `SubmitLetter.tsx`: add Language select in Step 1 or Step 2
+
+### Gap 4 — Mobile Responsiveness Fixes
+- [ ] Fix `Dashboard.tsx`: stats cards 2×2 on mobile, full-width buttons, hide stepper labels
+- [ ] Fix `MyLetters.tsx`: table → stacked card list on mobile (`hidden sm:table` + `sm:hidden` cards)
+- [ ] Fix `Login.tsx` and `Signup.tsx`: `w-full max-w-md mx-auto px-4` container
+- [ ] Fix `ReviewModal.tsx`: full-screen on mobile, accordion for intake panel, sticky footer buttons
+
+### Validation Gate (run after each gap)
+- [ ] `pnpm test` — all tests passing (currently 153+)
+- [ ] `pnpm tsc --noEmit` — 0 TypeScript errors
+- [ ] Status machine: no `ALLOWED_TRANSITIONS` regression
