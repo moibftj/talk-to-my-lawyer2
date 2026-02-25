@@ -323,16 +323,16 @@
 
 ## Phase 33: Database Migration — TiDB (MySQL) → Supabase (PostgreSQL)
 
-- [ ] Save safety checkpoint of current TiDB working state
-- [ ] Convert drizzle/schema.ts from MySQL to PostgreSQL dialect (pgTable, pgEnum, serial, text, integer, boolean, timestamp, jsonb, index)
-- [ ] Update drizzle.config.ts dialect from mysql to postgresql
-- [ ] Install pg/postgres Drizzle driver (drizzle-orm/node-postgres or postgres.js)
-- [ ] Remove mysql2 driver dependency
-- [ ] Delete old MySQL migration files and regenerate PostgreSQL migrations
-- [ ] Apply migrations to Supabase project hesxnmtbqlsstotggxsn via MCP execute_sql
-- [ ] Verify all 9 application tables exist in Supabase public schema
-- [ ] Update DATABASE_URL secret to Supabase PostgreSQL connection string
-- [ ] Update server/db.ts connection code from mysql2 to postgres.js/pg
-- [ ] Fix any PostgreSQL-specific syntax (ON UPDATE CURRENT_TIMESTAMP → triggers, AUTO_INCREMENT → serial/identity)
-- [ ] Run all tests and verify 0 TypeScript errors
-- [ ] Save checkpoint and deliver
+- [x] Save safety checkpoint of current TiDB working state (56f02c8e)
+- [x] Convert drizzle/schema.ts from MySQL to PostgreSQL dialect (pgTable, pgEnum, serial, text, integer, boolean, timestamp, jsonb, index)
+- [x] Update drizzle.config.ts dialect from mysql to postgresql
+- [x] Install postgres.js driver + drizzle-orm/postgres-js
+- [x] Remove mysql2 driver dependency
+- [x] Delete old MySQL migration files and regenerate PostgreSQL migration (0000_nervous_james_howlett.sql)
+- [x] Apply migrations to Supabase project lguqhibpxympxvwqpedf via MCP execute_sql (12 enums, 9 tables, 7 indexes, 5 triggers)
+- [x] Verify all 9 application tables exist in Supabase public schema
+- [x] Set SUPABASE_DATABASE_URL secret (pooler: aws-1-us-east-2.pooler.supabase.com:6543)
+- [x] Update server/db.ts: postgres.js driver, SUPABASE_DATABASE_URL priority, connection pooling (max:10, idle:20s, connect:10s)
+- [x] Fix PostgreSQL-specific syntax: serial PKs, timestamptz, updated_at trigger function, onConflictDoUpdate
+- [x] Run all tests: 164/164 passing, 0 TypeScript errors, 11 new migration tests
+- [x] Server log: [Database] Connected to Supabase (PostgreSQL)

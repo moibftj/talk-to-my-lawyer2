@@ -1,1 +1,0 @@
-ALTER TABLE `letter_requests` MODIFY COLUMN `status` enum('submitted','researching','drafting','generated_locked','pending_review','under_review','needs_changes','approved','rejected') NOT NULL DEFAULT 'submitted';

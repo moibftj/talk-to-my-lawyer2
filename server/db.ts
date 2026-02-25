@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import type { InsertUser } from "../drizzle/schema";
 import {
   attachments,
@@ -16,9 +17,19 @@ import { ENV } from "./_core/env";
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  // SUPABASE_DATABASE_URL takes priority over the platform-injected TiDB DATABASE_URL
+  const dbUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+  if (!_db && dbUrl) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const isSupabase = dbUrl.includes('supabase');
+      const client = postgres(dbUrl, {
+        ssl: 'require',
+        max: 10,
+        idle_timeout: 20,
+        connect_timeout: 10,
+      });
+      _db = drizzle(client);
+      console.log(`[Database] Connected to ${isSupabase ? 'Supabase (PostgreSQL)' : 'TiDB'}`);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -54,7 +65,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {

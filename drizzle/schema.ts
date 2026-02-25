@@ -1,15 +1,16 @@
 import {
-  int,
-  mysqlEnum,
-  mysqlTable,
+  integer,
+  pgEnum,
+  pgTable,
   text,
   timestamp,
   varchar,
-  json,
+  jsonb,
   bigint,
   boolean,
+  serial,
   index,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/pg-core";
 
 // ─── User Roles ───
 export const USER_ROLES = ["subscriber", "employee", "admin"] as const;
@@ -65,20 +66,40 @@ export type ResearchStatus = (typeof RESEARCH_STATUSES)[number];
 export const PRIORITIES = ["low", "normal", "high", "urgent"] as const;
 export type Priority = (typeof PRIORITIES)[number];
 
+// ─── PostgreSQL Enums ───
+export const userRoleEnum = pgEnum("user_role", ["subscriber", "employee", "admin"]);
+export const letterStatusEnum = pgEnum("letter_status", [
+  "submitted", "researching", "drafting", "generated_locked",
+  "pending_review", "under_review", "needs_changes", "approved", "rejected",
+]);
+export const letterTypeEnum = pgEnum("letter_type", [
+  "demand-letter", "cease-and-desist", "contract-breach", "eviction-notice",
+  "employment-dispute", "consumer-complaint", "general-legal",
+]);
+export const versionTypeEnum = pgEnum("version_type", ["ai_draft", "attorney_edit", "final_approved"]);
+export const actorTypeEnum = pgEnum("actor_type", ["system", "subscriber", "employee", "admin"]);
+export const jobStatusEnum = pgEnum("job_status", ["queued", "running", "completed", "failed"]);
+export const jobTypeEnum = pgEnum("job_type", ["research", "draft_generation", "generation_pipeline", "retry"]);
+export const researchStatusEnum = pgEnum("research_status", ["queued", "running", "completed", "failed", "invalid"]);
+export const priorityEnum = pgEnum("priority_level", ["low", "normal", "high", "urgent"]);
+export const noteVisibilityEnum = pgEnum("note_visibility", ["internal", "user_visible"]);
+export const subscriptionPlanEnum = pgEnum("subscription_plan", ["per_letter", "monthly", "annual"]);
+export const subscriptionStatusEnum = pgEnum("subscription_status", ["active", "canceled", "past_due", "trialing", "incomplete", "none"]);
+
 // ═══════════════════════════════════════════════════════
 // TABLE: users
 // ═══════════════════════════════════════════════════════
-export const users = mysqlTable("users", {
-  id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  openId: varchar("open_id", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["subscriber", "employee", "admin"]).default("subscriber").notNull(),
-  isActive: boolean("isActive").default(true).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+  loginMethod: varchar("login_method", { length: 64 }),
+  role: userRoleEnum("role").default("subscriber").notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSignedIn: timestamp("last_signed_in", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
@@ -87,44 +108,25 @@ export type InsertUser = typeof users.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: letter_requests
 // ═══════════════════════════════════════════════════════
-export const letterRequests = mysqlTable("letter_requests", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  letterType: mysqlEnum("letterType", [
-    "demand-letter",
-    "cease-and-desist",
-    "contract-breach",
-    "eviction-notice",
-    "employment-dispute",
-    "consumer-complaint",
-    "general-legal",
-  ]).notNull(),
+export const letterRequests = pgTable("letter_requests", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  letterType: letterTypeEnum("letter_type").notNull(),
   subject: varchar("subject", { length: 500 }).notNull(),
-  issueSummary: text("issueSummary"),
-  jurisdictionCountry: varchar("jurisdictionCountry", { length: 100 }).default("US"),
-  jurisdictionState: varchar("jurisdictionState", { length: 100 }),
-  jurisdictionCity: varchar("jurisdictionCity", { length: 200 }),
-  intakeJson: json("intakeJson"),
-  status: mysqlEnum("status", [
-    "submitted",
-    "researching",
-    "drafting",
-    "generated_locked",
-    "pending_review",
-    "under_review",
-    "needs_changes",
-    "approved",
-    "rejected",
-  ]).default("submitted").notNull(),
-  assignedReviewerId: int("assignedReviewerId"),
-  currentAiDraftVersionId: int("currentAiDraftVersionId"),
-  currentFinalVersionId: int("currentFinalVersionId"),
-  priority: mysqlEnum("priority", ["low", "normal", "high", "urgent"]).default("normal").notNull(),
-  lastStatusChangedAt: timestamp("lastStatusChangedAt").defaultNow(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  issueSummary: text("issue_summary"),
+  jurisdictionCountry: varchar("jurisdiction_country", { length: 100 }).default("US"),
+  jurisdictionState: varchar("jurisdiction_state", { length: 100 }),
+  jurisdictionCity: varchar("jurisdiction_city", { length: 200 }),
+  intakeJson: jsonb("intake_json"),
+  status: letterStatusEnum("status").default("submitted").notNull(),
+  assignedReviewerId: integer("assigned_reviewer_id"),
+  currentAiDraftVersionId: integer("current_ai_draft_version_id"),
+  currentFinalVersionId: integer("current_final_version_id"),
+  priority: priorityEnum("priority").default("normal").notNull(),
+  lastStatusChangedAt: timestamp("last_status_changed_at", { withTimezone: true }).defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  // Performance indexes required by spec
   statusIdx: index("idx_letter_requests_status").on(t.status),
   userIdIdx: index("idx_letter_requests_user_id").on(t.userId),
   assignedReviewerIdx: index("idx_letter_requests_assigned_reviewer").on(t.assignedReviewerId),
@@ -136,15 +138,15 @@ export type InsertLetterRequest = typeof letterRequests.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: letter_versions (immutable version history)
 // ═══════════════════════════════════════════════════════
-export const letterVersions = mysqlTable("letter_versions", {
-  id: int("id").autoincrement().primaryKey(),
-  letterRequestId: int("letterRequestId").notNull(),
-  versionType: mysqlEnum("versionType", ["ai_draft", "attorney_edit", "final_approved"]).notNull(),
+export const letterVersions = pgTable("letter_versions", {
+  id: serial("id").primaryKey(),
+  letterRequestId: integer("letter_request_id").notNull(),
+  versionType: versionTypeEnum("version_type").notNull(),
   content: text("content").notNull(),
-  createdByType: mysqlEnum("createdByType", ["system", "subscriber", "employee", "admin"]).notNull(),
-  createdByUserId: int("createdByUserId"),
-  metadataJson: json("metadataJson"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  createdByType: actorTypeEnum("created_by_type").notNull(),
+  createdByUserId: integer("created_by_user_id"),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   letterRequestIdIdx: index("idx_letter_versions_letter_request_id").on(t.letterRequestId),
 }));
@@ -155,17 +157,17 @@ export type InsertLetterVersion = typeof letterVersions.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: review_actions (audit trail)
 // ═══════════════════════════════════════════════════════
-export const reviewActions = mysqlTable("review_actions", {
-  id: int("id").autoincrement().primaryKey(),
-  letterRequestId: int("letterRequestId").notNull(),
-  reviewerId: int("reviewerId"),
-  actorType: mysqlEnum("actorType", ["system", "subscriber", "employee", "admin"]).notNull(),
+export const reviewActions = pgTable("review_actions", {
+  id: serial("id").primaryKey(),
+  letterRequestId: integer("letter_request_id").notNull(),
+  reviewerId: integer("reviewer_id"),
+  actorType: actorTypeEnum("actor_type").notNull(),
   action: varchar("action", { length: 100 }).notNull(),
-  noteText: text("noteText"),
-  noteVisibility: mysqlEnum("noteVisibility", ["internal", "user_visible"]).default("internal"),
-  fromStatus: varchar("fromStatus", { length: 50 }),
-  toStatus: varchar("toStatus", { length: 50 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  noteText: text("note_text"),
+  noteVisibility: noteVisibilityEnum("note_visibility").default("internal"),
+  fromStatus: varchar("from_status", { length: 50 }),
+  toStatus: varchar("to_status", { length: 50 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   letterRequestIdIdx: index("idx_review_actions_letter_request_id").on(t.letterRequestId),
 }));
@@ -176,20 +178,20 @@ export type InsertReviewAction = typeof reviewActions.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: workflow_jobs (pipeline execution logging)
 // ═══════════════════════════════════════════════════════
-export const workflowJobs = mysqlTable("workflow_jobs", {
-  id: int("id").autoincrement().primaryKey(),
-  letterRequestId: int("letterRequestId").notNull(),
-  jobType: mysqlEnum("jobType", ["research", "draft_generation", "generation_pipeline", "retry"]).notNull(),
+export const workflowJobs = pgTable("workflow_jobs", {
+  id: serial("id").primaryKey(),
+  letterRequestId: integer("letter_request_id").notNull(),
+  jobType: jobTypeEnum("job_type").notNull(),
   provider: varchar("provider", { length: 50 }),
-  status: mysqlEnum("status", ["queued", "running", "completed", "failed"]).default("queued").notNull(),
-  attemptCount: int("attemptCount").default(0),
-  errorMessage: text("errorMessage"),
-  requestPayloadJson: json("requestPayloadJson"),
-  responsePayloadJson: json("responsePayloadJson"),
-  startedAt: timestamp("startedAt"),
-  completedAt: timestamp("completedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  status: jobStatusEnum("status").default("queued").notNull(),
+  attemptCount: integer("attempt_count").default(0),
+  errorMessage: text("error_message"),
+  requestPayloadJson: jsonb("request_payload_json"),
+  responsePayloadJson: jsonb("response_payload_json"),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   letterRequestStatusIdx: index("idx_workflow_jobs_letter_request_status").on(t.letterRequestId, t.status),
 }));
@@ -200,18 +202,18 @@ export type InsertWorkflowJob = typeof workflowJobs.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: research_runs
 // ═══════════════════════════════════════════════════════
-export const researchRuns = mysqlTable("research_runs", {
-  id: int("id").autoincrement().primaryKey(),
-  letterRequestId: int("letterRequestId").notNull(),
-  workflowJobId: int("workflowJobId"),
+export const researchRuns = pgTable("research_runs", {
+  id: serial("id").primaryKey(),
+  letterRequestId: integer("letter_request_id").notNull(),
+  workflowJobId: integer("workflow_job_id"),
   provider: varchar("provider", { length: 50 }).default("perplexity"),
-  status: mysqlEnum("status", ["queued", "running", "completed", "failed", "invalid"]).default("queued").notNull(),
-  queryPlanJson: json("queryPlanJson"),
-  resultJson: json("resultJson"),
-  validationResultJson: json("validationResultJson"),
-  errorMessage: text("errorMessage"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  status: researchStatusEnum("status").default("queued").notNull(),
+  queryPlanJson: jsonb("query_plan_json"),
+  resultJson: jsonb("result_json"),
+  validationResultJson: jsonb("validation_result_json"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   letterRequestStatusIdx: index("idx_research_runs_letter_request_status").on(t.letterRequestId, t.status),
 }));
@@ -222,17 +224,17 @@ export type InsertResearchRun = typeof researchRuns.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: attachments
 // ═══════════════════════════════════════════════════════
-export const attachments = mysqlTable("attachments", {
-  id: int("id").autoincrement().primaryKey(),
-  letterRequestId: int("letterRequestId").notNull(),
-  uploadedByUserId: int("uploadedByUserId").notNull(),
-  storagePath: varchar("storagePath", { length: 1000 }).notNull(),
-  storageUrl: varchar("storageUrl", { length: 2000 }),
-  fileName: varchar("fileName", { length: 500 }).notNull(),
-  mimeType: varchar("mimeType", { length: 200 }),
-  sizeBytes: bigint("sizeBytes", { mode: "number" }),
-  metadataJson: json("metadataJson"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+export const attachments = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+  letterRequestId: integer("letter_request_id").notNull(),
+  uploadedByUserId: integer("uploaded_by_user_id").notNull(),
+  storagePath: varchar("storage_path", { length: 1000 }).notNull(),
+  storageUrl: varchar("storage_url", { length: 2000 }),
+  fileName: varchar("file_name", { length: 500 }).notNull(),
+  mimeType: varchar("mime_type", { length: 200 }),
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Attachment = typeof attachments.$inferSelect;
@@ -241,16 +243,16 @@ export type InsertAttachment = typeof attachments.$inferInsert;
 // ═══════════════════════════════════════════════════════
 // TABLE: notifications
 // ═══════════════════════════════════════════════════════
-export const notifications = mysqlTable("notifications", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
   type: varchar("type", { length: 100 }).notNull(),
   title: varchar("title", { length: 500 }).notNull(),
   body: text("body"),
   link: varchar("link", { length: 1000 }),
-  readAt: timestamp("readAt"),
-  metadataJson: json("metadataJson"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Notification = typeof notifications.$inferSelect;
@@ -265,22 +267,22 @@ export type SubscriptionPlan = (typeof SUBSCRIPTION_PLANS)[number];
 export const SUBSCRIPTION_STATUSES = ["active", "canceled", "past_due", "trialing", "incomplete", "none"] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
-export const subscriptions = mysqlTable("subscriptions", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
-  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
-  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
-  plan: mysqlEnum("plan", ["per_letter", "monthly", "annual"]).notNull(),
-  status: mysqlEnum("status", ["active", "canceled", "past_due", "trialing", "incomplete", "none"]).default("none").notNull(),
-  lettersAllowed: int("lettersAllowed").default(0).notNull(), // -1 = unlimited
-  lettersUsed: int("lettersUsed").default(0).notNull(),
-  currentPeriodStart: timestamp("currentPeriodStart"),
-  currentPeriodEnd: timestamp("currentPeriodEnd"),
-  cancelAtPeriodEnd: boolean("cancelAtPeriodEnd").default(false).notNull(),
-  metadataJson: json("metadataJson"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+export const subscriptions = pgTable("subscriptions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
+  plan: subscriptionPlanEnum("plan").notNull(),
+  status: subscriptionStatusEnum("status").default("none").notNull(),
+  lettersAllowed: integer("letters_allowed").default(0).notNull(), // -1 = unlimited
+  lettersUsed: integer("letters_used").default(0).notNull(),
+  currentPeriodStart: timestamp("current_period_start", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  metadataJson: jsonb("metadata_json"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 export type Subscription = typeof subscriptions.$inferSelect;

@@ -1,40 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1771771460767,
-      "tag": "0000_productive_wong",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1771771690548,
-      "tag": "0001_spooky_alex_wilder",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1771800937837,
-      "tag": "0002_outstanding_madelyne_pryor",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1771804684526,
-      "tag": "0003_rainy_ultimates",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1771810671853,
-      "tag": "0004_previous_titania",
+      "version": "7",
+      "when": 1771993465162,
+      "tag": "0000_nervous_james_howlett",
       "breakpoints": true
     }
   ]
