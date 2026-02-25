@@ -304,3 +304,19 @@
 - [x] Add attorney notes field for review comments
 - [x] Mobile-responsive modal layout
 - [x] Write tests for review modal logic (31 tests passing)
+
+## Phase 32: Full Pipeline Architecture Audit (/ttml-full-pipeline-architecture)
+
+- [x] Audit all 3 pipeline stages against architecture spec
+- [x] Fix pipeline.ts comments — stages 2 & 3 correctly labeled as Anthropic (not OpenAI)
+- [x] Fix pipeline metadata: assembledFrom.draftProvider = "anthropic" (was "openai")
+- [x] Fix pipeline stage labels: "anthropic-draft" and "anthropic-assembly" (were "openai-draft", "claude-assembly")
+- [x] Fix versions.get procedure — subscribers can now view ai_draft when letter is generated_locked (paywall preview)
+- [x] Upgrade LetterDetail download from .txt to print-ready PDF (browser print dialog with letterhead)
+- [x] Add purgeFailedJobs db helper (deletes all failed workflow_jobs)
+- [x] Add admin.purgeFailedJobs tRPC mutation (admin-only)
+- [x] Add "Purge All" button with AlertDialog confirmation to admin Jobs page
+- [x] Verify all polling intervals match architecture spec (5s LetterDetail, 8s MyLetters/Dashboard, 10s ReviewQueue, 15s Employee Dashboard)
+- [x] Verify email templates: 9 functions present and correct (submission, ready, unlocked, approved, rejected, needs_changes, new_review, job_failed, status_update)
+- [x] Verify Stripe webhook: letter unlock flow, subscription events, invoice.paid renewal
+- [x] Write architecture audit tests (153 total, all passing, 0 TypeScript errors)

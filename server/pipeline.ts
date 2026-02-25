@@ -2,8 +2,8 @@
  * Three-stage AI pipeline for legal letter generation:
  *
  * Stage 1: PERPLEXITY (sonar) — Legal research with web-grounded citations
- * Stage 2: OPENAI (gpt-4o) — Initial draft generation from research packet
- * Stage 3: CLAUDE (claude-sonnet-4-20250514) — Final professional letter assembly
+ * Stage 2: ANTHROPIC (claude-opus-4-5) — Initial draft generation from research packet
+ * Stage 3: ANTHROPIC (claude-opus-4-5) — Final professional letter assembly
  *
  * Each stage has deterministic validators before transitioning.
  * All stages log to workflow_jobs and research_runs for audit trail.
@@ -54,13 +54,13 @@ function getResearchModel() {
   return { model: perplexity.chat("sonar-pro"), provider: "perplexity" };
 }
 
-/** Stage 2: Claude claude-opus-4-5 — initial legal draft (direct Anthropic API) */
+/** Stage 2: Anthropic claude-opus-4-5 — initial legal draft (direct Anthropic API) */
 function getDraftModel() {
   const anthropic = getAnthropicClient();
   return anthropic("claude-opus-4-5");
 }
 
-/** Stage 3: Claude claude-opus-4-5 — final polished letter assembly (direct Anthropic API) */
+/** Stage 3: Anthropic claude-opus-4-5 — final polished letter assembly (direct Anthropic API) */
 function getAssemblyModel() {
   const anthropic = getAnthropicClient();
   return anthropic("claude-opus-4-5");
@@ -378,7 +378,7 @@ export async function runAssemblyStage(
         stage: "final_assembly",
         assembledFrom: {
           researchProvider: "perplexity",
-          draftProvider: "openai",
+          draftProvider: "anthropic",
         },
         validationWarnings: validation.errors.length > 0 ? validation.errors : undefined,
       },
@@ -396,7 +396,7 @@ export async function runAssemblyStage(
       letterRequestId: letterId,
       actorType: "system",
       action: "ai_pipeline_completed",
-      noteText: `3-stage pipeline complete. Research (Perplexity) → Draft (OpenAI) → Final Assembly (Claude). Your letter is ready — unlock it to send for attorney review.`,
+        noteText: `3-stage pipeline complete. Research (Perplexity) → Draft (Anthropic) → Final Assembly (Anthropic). Your letter is ready — unlock it to send for attorney review.`,
       noteVisibility: "user_visible",
       fromStatus: "drafting",
       toStatus: "generated_locked",
@@ -541,7 +541,7 @@ export async function runFullPipeline(letterId: number, intake: IntakeJson, dbFi
     letterRequestId: letterId,
     jobType: "generation_pipeline",
     provider: "multi-provider",
-    requestPayloadJson: { letterId, stages: ["perplexity-research", "openai-draft", "claude-assembly"], normalizedInput },
+    requestPayloadJson: { letterId, stages: ["perplexity-research", "anthropic-draft", "anthropic-assembly"], normalizedInput },
   });
   const pipelineJobId = (pipelineJob as any)?.insertId ?? 0;
   await updateWorkflowJob(pipelineJobId, { status: "running", startedAt: new Date() });

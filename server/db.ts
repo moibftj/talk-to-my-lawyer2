@@ -363,6 +363,16 @@ export async function getWorkflowJobById(id: number) {
   return result[0];
 }
 
+export async function purgeFailedJobs(): Promise<{ deletedCount: number }> {
+  const db = await getDb();
+  if (!db) return { deletedCount: 0 };
+  // Get count before deleting
+  const failed = await db.select({ id: workflowJobs.id }).from(workflowJobs).where(eq(workflowJobs.status, "failed"));
+  if (failed.length === 0) return { deletedCount: 0 };
+  await db.delete(workflowJobs).where(eq(workflowJobs.status, "failed"));
+  return { deletedCount: failed.length };
+}
+
 // ═══════════════════════════════════════════════════════
 // RESEARCH RUN HELPERS
 // ═══════════════════════════════════════════════════════

@@ -66,13 +66,59 @@ export default function LetterDetail() {
     if (!data?.versions) return;
     const finalVersion = data.versions.find((v) => v.versionType === "final_approved");
     if (!finalVersion) return;
-    const blob = new Blob([finalVersion.content], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `letter-${letterId}-approved.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    // Generate a print-ready HTML page and trigger browser PDF save
+    const letterContent = finalVersion.content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>");
+
+    const printHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Legal Letter #${letterId}</title>
+  <style>
+    @page { margin: 1in; size: letter; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.6; color: #000; background: #fff; }
+    .header { border-bottom: 2px solid #1E3A5F; padding-bottom: 12px; margin-bottom: 24px; }
+    .brand { font-family: Arial, sans-serif; font-size: 10pt; color: #1E3A5F; font-weight: bold; }
+    .meta { font-family: Arial, sans-serif; font-size: 9pt; color: #666; margin-top: 4px; }
+    .letter-body { white-space: pre-wrap; font-size: 12pt; }
+    .footer { border-top: 1px solid #ccc; margin-top: 32px; padding-top: 12px; font-family: Arial, sans-serif; font-size: 9pt; color: #888; text-align: center; }
+    @media print { body { print-color-adjust: exact; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">⚖️ Talk to My Lawyer — Attorney-Approved Legal Letter</div>
+    <div class="meta">Letter #${letterId} &bull; ${data.letter.letterType.replace(/-/g, " ")} &bull; ${new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
+  </div>
+  <div class="letter-body">${letterContent}</div>
+  <div class="footer">This letter was reviewed and approved by a licensed attorney via Talk to My Lawyer. &copy; ${new Date().getFullYear()} Talk to My Lawyer</div>
+</body>
+</html>`;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      // Fallback: download as HTML file
+      const blob = new Blob([printHtml], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `legal-letter-${letterId}.html`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      // printWindow.close() is intentionally omitted — user may want to keep the preview
+    }, 500);
   };
 
   if (isLoading) {

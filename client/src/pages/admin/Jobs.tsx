@@ -1,14 +1,37 @@
 import AppLayout from "@/components/shared/AppLayout";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, RefreshCw, CheckCircle, Loader2 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle, RefreshCw, CheckCircle, Loader2, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useState } from "react";
 
 export default function AdminJobs() {
   const { data: failedJobs, isLoading, refetch } = trpc.admin.failedJobs.useQuery();
   const [retrying, setRetrying] = useState<number | null>(null);
+
+  const purgeJobs = trpc.admin.purgeFailedJobs.useMutation({
+    onSuccess: (data) => {
+      toast.success(
+        data.deletedCount > 0
+          ? `Purged ${data.deletedCount} failed job${data.deletedCount !== 1 ? "s" : ""} successfully.`
+          : "No failed jobs to purge."
+      );
+      refetch();
+    },
+    onError: (e) => toast.error(`Purge failed: ${e.message}`),
+  });
 
   const retryJob = trpc.admin.retryJob.useMutation({
     onSuccess: (_, vars) => {
@@ -18,6 +41,8 @@ export default function AdminJobs() {
     },
     onError: (e) => { toast.error(e.message); setRetrying(null); },
   });
+
+  const jobCount = failedJobs?.length ?? 0;
 
   const handleRetry = (letterId: number, jobType: string) => {
     const stage = jobType.includes("research") ? "research" : "drafting";
@@ -31,12 +56,45 @@ export default function AdminJobs() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Failed Jobs</h1>
-            <p className="text-sm text-muted-foreground">{failedJobs?.length ?? 0} failed pipeline jobs</p>
+            <p className="text-sm text-muted-foreground">{jobCount} failed pipeline job{jobCount !== 1 ? "s" : ""}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-background">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="bg-background">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            {jobCount > 0 && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={purgeJobs.isPending}>
+                    {purgeJobs.isPending ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Purging...</>
+                    ) : (
+                      <><Trash2 className="w-4 h-4 mr-2" />Purge All ({jobCount})</>
+                    )}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Purge all failed jobs?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all {jobCount} failed pipeline job{jobCount !== 1 ? "s" : ""} from the database.
+                      This action cannot be undone. The associated letter requests will remain intact.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => purgeJobs.mutate()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Yes, purge all
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
 
         {isLoading ? (

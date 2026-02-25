@@ -32,6 +32,7 @@ import {
   updateLetterVersionPointers,
   updateUserRole,
   getUserById,
+  purgeFailedJobs,
 } from "./db";
 import {
   sendJobFailedAlertEmail,
@@ -480,6 +481,12 @@ export const appRouter = router({
         return { success: true, message: `Retry started for stage: ${input.stage}` };
       }),
 
+    purgeFailedJobs: adminProcedure
+      .mutation(async () => {
+        const result = await purgeFailedJobs();
+        return { success: true, deletedCount: result.deletedCount };
+      }),
+
     letterJobs: adminProcedure
       .input(z.object({ letterId: z.number() }))
       .query(async ({ input }) => getWorkflowJobsByLetterId(input.letterId)),
@@ -567,8 +574,19 @@ export const appRouter = router({
       .query(async ({ ctx, input }) => {
         const version = await getLetterVersionById(input.id);
         if (!version) throw new TRPCError({ code: "NOT_FOUND" });
-        if (ctx.user.role === "subscriber" && version.versionType !== "final_approved")
+        if (ctx.user.role === "subscriber") {
+          // Subscribers can view final_approved versions always
+          // They can also view ai_draft when the letter is generated_locked (paywall preview)
+          if (version.versionType === "final_approved") return version;
+          if (version.versionType === "ai_draft") {
+            // Verify the letter belongs to this subscriber and is in generated_locked
+            const letter = await getLetterRequestById(version.letterRequestId);
+            if (letter && letter.userId === ctx.user.id && letter.status === "generated_locked") {
+              return version;
+            }
+          }
           throw new TRPCError({ code: "FORBIDDEN", message: "Access denied" });
+        }
         return version;
       }),
   }),
