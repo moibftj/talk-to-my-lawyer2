@@ -18,6 +18,55 @@ const ROLE_LABELS: Record<string, { label: string; color: string }> = {
   admin: { label: "Admin", color: "bg-red-100 text-red-800" },
 };
 
+
+// ─── Resend Verification Button ───────────────────────────────────────────
+function ResendVerificationButton({ email }: { email: string }) {
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  if (sent) {
+    return (
+      <p className="text-green-700 text-xs font-medium mt-2">
+        Verification email sent! Check your inbox.
+      </p>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={loading || !email}
+      onClick={async () => {
+        setLoading(true);
+        try {
+          const res = await fetch("/api/auth/resend-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          const d = await res.json();
+          setSent(true);
+          toast.success("Verification email sent", { description: d.message || "Check your inbox." });
+        } catch {
+          toast.error("Could not resend email", { description: "Please try again." });
+        } finally {
+          setLoading(false);
+        }
+      }}
+      className="mt-2 text-indigo-700 hover:underline text-xs font-medium disabled:opacity-50 flex items-center gap-1"
+    >
+      {loading ? (
+        <>
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Sending…
+        </>
+      ) : (
+        "Resend verification email"
+      )}
+    </button>
+  );
+}
+
 export default function Profile() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
@@ -133,12 +182,13 @@ export default function Profile() {
         {user && user.emailVerified === false && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-amber-800">Email verification required</p>
               <p className="text-sm text-amber-700 mt-1">
                 Your email address has not been verified. Please check your inbox for a verification link.
                 Some features may be limited until your email is verified.
               </p>
+              <ResendVerificationButton email={user.email || ""} />
             </div>
           </div>
         )}

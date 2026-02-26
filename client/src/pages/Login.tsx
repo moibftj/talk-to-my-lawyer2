@@ -32,6 +32,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,6 +68,9 @@ export default function Login() {
       if (!response.ok) {
         const msg = data.error || "Login failed. Please check your credentials.";
         setError(msg);
+        if (data.code === "EMAIL_NOT_VERIFIED") {
+          setShowResendVerification(true);
+        }
         toast.error(msg);
         setLoading(false);
         return;
@@ -132,9 +138,43 @@ export default function Login() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               {error && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                  <span>{error}</span>
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                  {showResendVerification && (
+                    <div className="mt-2 pt-2 border-t border-red-200">
+                      {resendSent ? (
+                        <p className="text-green-700 text-xs font-medium">Verification email sent! Check your inbox.</p>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={resendLoading}
+                          onClick={async () => {
+                            setResendLoading(true);
+                            try {
+                              const res = await fetch("/api/auth/resend-verification", {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ email }),
+                              });
+                              const d = await res.json();
+                              setResendSent(true);
+                              toast.success("Verification email sent", { description: d.message || "Check your inbox." });
+                            } catch {
+                              toast.error("Could not resend email", { description: "Please try again." });
+                            } finally {
+                              setResendLoading(false);
+                            }
+                          }}
+                          className="text-indigo-700 hover:underline text-xs font-medium disabled:opacity-50"
+                        >
+                          {resendLoading ? "Sending…" : "Resend verification email"}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

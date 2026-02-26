@@ -260,7 +260,23 @@ export function registerSupabaseAuthRoutes(app: Express) {
           res.status(401).json({ error: "Invalid email or password" });
           return;
         }
+        // Supabase returns "Email not confirmed" when email_confirm is required
+        if (error.message.includes("Email not confirmed") || error.message.includes("email_not_confirmed")) {
+          res.status(401).json({ error: "Email not verified", code: "EMAIL_NOT_VERIFIED" });
+          return;
+        }
         res.status(401).json({ error: error.message });
+        return;
+      }
+      // Check our app-level emailVerified flag as well (belt-and-suspenders)
+      const appUserCheck = await db.getUserByEmail(email).catch(() => null);
+      if (appUserCheck && appUserCheck.emailVerified === false) {
+        // Sign them out of Supabase since we're blocking at app level
+        try {
+          const admin = getAdminClient();
+          await admin.auth.admin.signOut(data.user.id);
+        } catch {}
+        res.status(401).json({ error: "Email not verified", code: "EMAIL_NOT_VERIFIED" });
         return;
       }
 
@@ -479,23 +495,31 @@ export function registerSupabaseAuthRoutes(app: Express) {
         res.status(400).json({ error: "Verification token is required" });
         return;
       }
-      const consumed = await db.consumeVerificationToken(token);
-      if (!consumed) {
+      // consumeVerificationToken now returns the record on success, or null
+      const record = await db.consumeVerificationToken(token);
+      if (!record) {
         res.status(400).json({ error: "Invalid or expired verification token. Please request a new one." });
         return;
       }
-      // Send welcome email
-      const tokenRecord = await db.findValidVerificationToken(token).catch(() => null);
-      // tokenRecord is now null (already consumed) — get user from db
-      // We'll just return success and let the frontend handle welcome
+      // Send welcome email (fire-and-forget — don't block the response)
+      const origin = req.headers.origin || `https://${req.headers.host}` || "http://localhost:3000";
+      const dashboardUrl = `${origin}/dashboard`;
+      db.getUserById(record.userId).then(async (user) => {
+        if (user && user.email) {
+          try {
+            await sendWelcomeEmail({ to: user.email, name: user.name || user.email.split("@")[0], dashboardUrl });
+          } catch (emailErr) {
+            console.error("[SupabaseAuth] Failed to send welcome email:", emailErr);
+          }
+        }
+      }).catch(() => {});
       res.json({ success: true, message: "Email verified successfully! You can now sign in." });
     } catch (err) {
       console.error("[SupabaseAuth] Email verification error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   });
-
-  // POST /api/auth/resend-verification — Resend verification email
+    // POST /api/auth/resend-verification — Resend verification email
   app.post("/api/auth/resend-verification", async (req: Request, res: Response) => {
     try {
       const { email } = req.body;

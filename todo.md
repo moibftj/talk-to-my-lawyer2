@@ -786,3 +786,11 @@
 - [x] Apply global tRPC fallback (60 req/min per IP)
 - [x] Write 9 Vitest tests (credentials, PONG, allow/block, graceful degradation)
 - [x] All 330/330 tests passing, 0 TypeScript errors
+
+## Phase 64: Email Verification & Password Reset Fixes
+- [x] Fix verify-email route: look up user before consuming token, send welcome email after verification
+- [x] Create ResetPassword.tsx page to handle Supabase hash fragment (#access_token=...&type=recovery)
+- [x] Register /reset-password route in App.tsx
+- [x] Login page: detect unverified user error, show resend verification link
+- [x] Profile page: add Resend Verification Email button to the verification banner
+- [x] Write 21 Vitest tests for all fixed flows (351/351 total passing, 0 TS errors)

@@ -818,12 +818,14 @@ export async function findValidVerificationToken(token: string) {
   return result[0];
 }
 
-/** Mark a verification token as used and mark the user as verified */
+/** Mark a verification token as used and mark the user as verified.
+ * Returns the token record (with userId and email) on success, or null if invalid/expired.
+ */
 export async function consumeVerificationToken(token: string) {
   const db = await getDb();
-  if (!db) return false;
+  if (!db) return null;
   const record = await findValidVerificationToken(token);
-  if (!record) return false;
+  if (!record) return null;
   // Mark token as used
   await db
     .update(emailVerificationTokens)
@@ -834,7 +836,7 @@ export async function consumeVerificationToken(token: string) {
     .update(users)
     .set({ emailVerified: true, updatedAt: new Date() })
     .where(eq(users.id, record.userId));
-  return true;
+  return record; // { userId, email, ... }
 }
 
 /** Delete any existing unused tokens for a user (before issuing a new one) */
