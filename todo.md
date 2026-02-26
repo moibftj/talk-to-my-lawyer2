@@ -846,3 +846,13 @@
 - [x] Write 33 Vitest tests for new pricing model
 - [x] Update stale phase26 and phase66 tests for new plan names
 - [x] 398/398 tests passing, 0 TypeScript errors
+
+## Phase 68: Employee Commission & Coupon System
+- [x] Audit existing employee commission and coupon infrastructure (discount_codes + commission_ledger tables already exist)
+- [x] Backend: auto-generate discount code on employee signup (createDiscountCodeForEmployee called in completeOnboarding)
+- [x] Backend: add discountCode param to createCheckoutSession in stripe.ts (passed in metadata)
+- [x] Backend: add discountCode param to createCheckout tRPC procedure (planId + discountCode)
+- [x] Backend: Stripe webhook — commission tracking for subscription payments in checkout.session.completed
+- [x] Frontend: promo code field on LetterPaywall (all tiers — validate via affiliate.validateCode, show discount, pass to checkout)
+- [x] Frontend: promo code field on LetterDetail $50 trial and $200 per-letter CTAs
+- [x] 398/398 tests passing, 0 TypeScript errors

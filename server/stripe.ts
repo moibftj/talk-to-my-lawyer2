@@ -63,8 +63,9 @@ export async function createCheckoutSession(params: {
   name?: string | null;
   planId: string;
   origin: string;
+  discountCode?: string;
 }): Promise<{ url: string; sessionId: string }> {
-  const { userId, email, name, planId, origin } = params;
+  const { userId, email, name, planId, origin, discountCode } = params;
   const plan = getPlanConfig(planId);
   if (!plan) throw new Error(`Invalid plan: ${planId}`);
 
@@ -81,6 +82,7 @@ export async function createCheckoutSession(params: {
       plan_id: planId,
       customer_email: email,
       customer_name: name ?? "",
+      ...(discountCode ? { discount_code: discountCode } : {}),
     },
     success_url: `${origin}/subscriber/billing?success=true&plan=${planId}`,
     cancel_url: `${origin}/pricing?canceled=true`,

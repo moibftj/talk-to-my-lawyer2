@@ -215,6 +215,17 @@ export function registerSupabaseAuthRoutes(app: Express) {
         }
       }
 
+      // Auto-generate discount code for employees
+      if (appUser && signupRole === "employee") {
+        try {
+          await db.createDiscountCodeForEmployee(appUser.id, userName);
+          console.log(`[SupabaseAuth] Discount code auto-generated for new employee #${appUser.id}`);
+        } catch (codeErr) {
+          console.error("[SupabaseAuth] Failed to create discount code for employee:", codeErr);
+          // Non-fatal — employee can still sign up
+        }
+      }
+
       // Return success — user must verify email before accessing the app
       res.status(201).json({
         success: true,

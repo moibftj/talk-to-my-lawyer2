@@ -740,7 +740,7 @@ export const appRouter = router({
       return checkLetterSubmissionAllowed(ctx.user.id);
     }),
     createCheckout: protectedProcedure
-      .input(z.object({ planId: z.string() }))
+      .input(z.object({ planId: z.string(), discountCode: z.string().optional() }))
       .mutation(async ({ ctx, input }) => {
         // Rate limit: 10 checkout attempts per hour per user
         await checkTrpcRateLimit("payment", `user:${ctx.user.id}`);
@@ -750,6 +750,7 @@ export const appRouter = router({
           name: ctx.user.name,
           planId: input.planId,
           origin: ctx.req.headers.origin as string ?? "https://localhost:3000",
+          discountCode: input.discountCode,
         });
         return result;
       }),

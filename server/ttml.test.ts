@@ -2,6 +2,15 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { validateResearchPacket, parseAndValidateDraftLlmOutput } from "./pipeline";
 import { ALLOWED_TRANSITIONS, isValidTransition } from "../shared/types";
 
+// Mock Resend at module level to prevent real network calls in email tests
+vi.mock("resend", () => ({
+  Resend: vi.fn().mockImplementation(() => ({
+    emails: {
+      send: vi.fn().mockResolvedValue({ id: "mock-email-id", error: null }),
+    },
+  })),
+}));
+
 // ============================================================================
 // STATUS MACHINE TESTS
 // ============================================================================
@@ -320,6 +329,7 @@ describe("Email templates: structure and content", () => {
   });
 
   it("all three new email functions accept the correct parameter shapes without TypeError", async () => {
+    // Resend is mocked at module level above — no real network calls
     const emailModule = await import("./email");
     const baseOpts = {
       to: "test@example.com",
@@ -328,8 +338,7 @@ describe("Email templates: structure and content", () => {
       letterId: 42,
       appUrl: "https://example.com",
     };
-    // These will fail at the Resend API level (no real key in test env), but must NOT
-    // throw a TypeError about wrong argument shape — only a network/API error is acceptable.
+    // These must NOT throw a TypeError about wrong argument shape
     const submissionResult = emailModule.sendLetterSubmissionEmail({
       ...baseOpts,
       letterType: "demand-letter",

@@ -170,7 +170,40 @@ export async function stripeWebhookHandler(req: Request, res: Response): Promise
             }
           }
         }
-        // For subscription mode, the subscription.* events handle activation
+        // For subscription mode, the subscription.* events handle activation.
+        // Commission tracking must happen here because discount_code is only
+        // available in the checkout session metadata, not in the subscription object.
+        if (session.mode === "subscription") {
+          const discountCodeStr = session.metadata?.discount_code;
+          if (discountCodeStr) {
+            try {
+              const discountCode = await getDiscountCodeByCode(discountCodeStr);
+              if (discountCode && discountCode.isActive) {
+                await incrementDiscountCodeUsage(discountCode.id);
+                const saleAmount = session.amount_total ?? 0;
+                if (saleAmount > 0) {
+                  const commissionRate = 500; // 5% = 500 basis points
+                  const commissionAmount = Math.round(saleAmount * commissionRate / 10000);
+                  await createCommission({
+                    employeeId: discountCode.employeeId,
+                    letterRequestId: undefined,
+                    subscriberId: userId,
+                    discountCodeId: discountCode.id,
+                    stripePaymentIntentId: typeof session.payment_intent === "string"
+                      ? session.payment_intent
+                      : session.payment_intent?.id ?? undefined,
+                    saleAmount,
+                    commissionRate,
+                    commissionAmount,
+                  });
+                  console.log(`[StripeWebhook] Subscription commission: $${(commissionAmount / 100).toFixed(2)} for employee #${discountCode.employeeId} (plan: ${planId})`);
+                }
+              }
+            } catch (commErr) {
+              console.error(`[StripeWebhook] Subscription commission tracking error:`, commErr);
+            }
+          }
+        }
         break;
       }
 
