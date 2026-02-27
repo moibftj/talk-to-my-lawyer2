@@ -866,3 +866,13 @@
 - [x] StatusTimeline: rewritten with 6-step simplified flow, no generated_unlocked step
 - [x] ReviewQueue: filter to REVIEW_STATUSES only (pending_review+), added "New" badge for letters < 24h old
 - [x] Tests: 32/32 passing in phase69-letter-flow.test.ts, 0 TypeScript errors
+
+## Phase 70: Draft Ready Email Notification ($200 Attorney Review CTA)
+- [x] Rewrote sendLetterReadyEmail with $200 pricing (removed old $50/free-trial copy)
+- [x] Added letterType and jurisdictionState optional params for richer email context
+- [x] Email includes: letter summary card, "what's included" section (4 benefits), urgency note, amber CTA button
+- [x] Wired letterType + jurisdictionState into pipeline.ts call site
+- [x] Wired letterType + jurisdictionState into n8nCallback.ts call site
+- [x] Fixed n8nCallback.ts fallback paths: Claude-fail and no-intake both land at generated_locked (not pending_review)
+- [x] Updated stale $50 test description in phase67-pricing.test.ts
+- [x] Tests: 7/7 passing in phase70-draft-ready-email.test.ts, 0 TypeScript errors

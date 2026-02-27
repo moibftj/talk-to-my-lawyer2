@@ -493,44 +493,97 @@ export async function sendLetterSubmissionEmail(opts: {
   });
 }
 
-/** Notify subscriber that their AI draft is ready and they can unlock it for attorney review */
+/** Notify subscriber that their draft is ready and they can submit it for $200 attorney review */
 export async function sendLetterReadyEmail(opts: {
   to: string;
   name: string;
   subject: string;
   letterId: number;
   appUrl: string;
+  letterType?: string;
+  jurisdictionState?: string;
 }) {
   const ctaUrl = `${opts.appUrl}/letters/${opts.letterId}`;
+  const letterTypeLabel = opts.letterType
+    ? opts.letterType.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+    : "Legal Letter";
+  const jurisdictionLine = opts.jurisdictionState
+    ? `<p style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Jurisdiction:</strong> ${opts.jurisdictionState}</p>`
+    : "";
+
   const body = `
     <p>Hello ${opts.name},</p>
-    <p>Your AI-drafted legal letter is ready! Our system has completed the research and drafting stages for your request.</p>
-    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px;margin:20px 0;">
+    <p>Your letter draft is ready. Our legal team has completed the research and drafting stages — your letter is professionally structured and ready for attorney review.</p>
+
+    <!-- Letter summary card -->
+    <table border="0" cellpadding="0" cellspacing="0" width="100%"
+      style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;margin:20px 0;">
       <tr><td style="padding:20px;">
-        <p style="margin:0 0 8px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#166534;"><strong>✅ Your Draft Is Ready</strong></p>
+        <p style="margin:0 0 10px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#92400E;font-weight:700;">📄 Draft Ready — Attorney Review Required</p>
         <p style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Letter:</strong> ${opts.subject}</p>
+        <p style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Type:</strong> ${letterTypeLabel}</p>
+        ${jurisdictionLine}
         <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Letter ID:</strong> #${opts.letterId}</p>
       </td></tr>
     </table>
-    <p>Your first letter draft is <strong>completely free to read</strong>. When you're ready, submit it for licensed attorney review for just <strong>$50</strong>. The attorney will review, edit if needed, and approve your final letter.</p>
-    <p style="font-size:13px;color:#6B7280;">Attorney review ensures your letter is legally sound and professionally formatted before it's sent.</p>
+
+    <!-- What's included -->
+    <p style="margin:0 0 12px;font-family:Inter,Arial,sans-serif;font-size:15px;font-weight:700;color:#0F2744;">What's included with attorney review ($200):</p>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:20px;">
+      <tr>
+        <td width="28" valign="top" style="padding:4px 8px 8px 0;font-size:16px;">⚖️</td>
+        <td style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;padding-bottom:8px;">
+          <strong>Licensed attorney review</strong> — a qualified attorney reads every word of your draft
+        </td>
+      </tr>
+      <tr>
+        <td width="28" valign="top" style="padding:4px 8px 8px 0;font-size:16px;">✏️</td>
+        <td style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;padding-bottom:8px;">
+          <strong>Professional edits included</strong> — the attorney corrects, strengthens, and finalises your letter
+        </td>
+      </tr>
+      <tr>
+        <td width="28" valign="top" style="padding:4px 8px 8px 0;font-size:16px;">📑</td>
+        <td style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;padding-bottom:8px;">
+          <strong>PDF delivered to your account</strong> — download and send your professionally formatted letter
+        </td>
+      </tr>
+      <tr>
+        <td width="28" valign="top" style="padding:4px 8px 8px 0;font-size:16px;">🔒</td>
+        <td style="font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;">
+          <strong>Legally sound and jurisdiction-specific</strong> — researched and drafted for your exact situation
+        </td>
+      </tr>
+    </table>
+
+    <!-- Urgency note -->
+    <table border="0" cellpadding="0" cellspacing="0" width="100%"
+      style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;margin:0 0 8px;">
+      <tr><td style="padding:14px 18px;">
+        <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:13px;color:#1D4ED8;">
+          Your draft is ready and waiting. Click the button below to view a preview and complete your payment to submit for attorney review.
+        </p>
+      </td></tr>
+    </table>
   `;
+
   const html = buildEmailHtml({
-    preheader: `Your free AI-drafted letter is ready — submit for attorney review ($50).`,
-    title: "Your Letter Draft Is Ready 🎉",
+    preheader: `Your letter draft is ready — submit for attorney review for $200.`,
+    title: "Your Letter Draft Is Ready",
     body,
-    ctaText: "View Draft & Submit for Review — $50",
+    ctaText: "View Draft & Submit for Review — $200",
     ctaUrl,
-    accentColor: "#059669", // green — ready / positive action
+    accentColor: "#D97706", // amber — action required / payment prompt
   });
+
   await sendEmail({
     to: opts.to,
-    subject: `[${APP_NAME}] Your letter draft is ready — unlock for attorney review`,
+    subject: `[${APP_NAME}] Your letter draft is ready — submit for attorney review`,
     html,
     text: buildPlainText({
       title: "Your Letter Draft Is Ready",
-      body: `Hello ${opts.name}, your AI-drafted letter "${opts.subject}" (Letter #${opts.letterId}) is ready. Unlock it for attorney review at: ${ctaUrl}`,
-      ctaText: "View & Unlock Your Letter",
+      body: `Hello ${opts.name},\n\nYour letter draft "${opts.subject}" (Letter #${opts.letterId}) is ready for attorney review.\n\nWhat's included with attorney review ($200):\n- Licensed attorney review\n- Professional edits included\n- PDF delivered to your account\n- Legally sound and jurisdiction-specific\n\nClick below to view a preview of your draft and submit for attorney review.`,
+      ctaText: "View Draft & Submit for Review — $200",
       ctaUrl,
     }),
   });

@@ -130,7 +130,7 @@ describe("Subscription plan recurring check", () => {
 });
 
 describe("Email template pricing copy", () => {
-  it("sendLetterReadyEmail CTA text references $50", async () => {
+  it("sendLetterReadyEmail is exported from email.ts (Draft Ready — $200 CTA)", async () => {
     // Verify the email.ts module exports the function (lazy-init Resend won't crash)
     const { sendLetterReadyEmail } = await import("./email");
     expect(typeof sendLetterReadyEmail).toBe("function");

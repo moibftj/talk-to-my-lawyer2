@@ -470,6 +470,8 @@ export async function runAssemblyStage(
             subject: record.subject,
             letterId,
             appUrl: appBaseUrl,
+            letterType: record.letterType ?? undefined,
+            jurisdictionState: record.jurisdictionState ?? undefined,
           });
           console.log(`[Pipeline] Letter-ready email sent to ${subscriber.email} for letter #${letterId}`);
         }

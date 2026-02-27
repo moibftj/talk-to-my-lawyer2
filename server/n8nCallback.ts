@@ -132,27 +132,27 @@ export function registerN8nCallbackRoute(app: Express): void {
           const assemblyMsg = assemblyErr instanceof Error ? assemblyErr.message : String(assemblyErr);
           console.warn(`[n8n Callback] Stage 3 assembly failed for letter #${letterId}: ${assemblyMsg}. Using n8n draft as final.`);
 
-          // If Claude fails, use the n8n draft directly and move to pending_review
-          await updateLetterStatus(letterId, "pending_review");
+          // If Claude fails, use the n8n draft directly — still land at generated_locked so subscriber pays to unlock
+          await updateLetterStatus(letterId, "generated_locked");
           await logReviewAction({
             letterRequestId: letterId,
             actorType: "system",
             action: "ai_pipeline_completed",
-            noteText: `n8n pipeline complete (Perplexity + GPT-4o). Claude assembly skipped. Letter ready for attorney review.`,
+            noteText: `n8n pipeline complete (Perplexity + GPT-4o). Claude assembly skipped. Draft ready — awaiting subscriber payment for attorney review.`,
             fromStatus: "drafting",
-            toStatus: "pending_review",
+            toStatus: "generated_locked",
           });
         }
       } else {
-        // No intake found, just move to pending_review
-        await updateLetterStatus(letterId, "pending_review");
+        // No intake found — still land at generated_locked so subscriber pays to unlock
+        await updateLetterStatus(letterId, "generated_locked");
         await logReviewAction({
           letterRequestId: letterId,
           actorType: "system",
           action: "ai_pipeline_completed",
-          noteText: `n8n pipeline complete. Letter ready for attorney review.`,
+          noteText: `n8n pipeline complete. Draft ready — awaiting subscriber payment for attorney review.`,
           fromStatus: "drafting",
-          toStatus: "pending_review",
+          toStatus: "generated_locked",
         });
       }
 
@@ -171,6 +171,8 @@ export function registerN8nCallbackRoute(app: Express): void {
               subject: letterRecord.subject,
               letterId,
               appUrl: appBaseUrl,
+              letterType: letterRecord.letterType ?? undefined,
+              jurisdictionState: letterRecord.jurisdictionState ?? undefined,
             });
             console.log(`[n8n Callback] Letter-ready email sent to ${subscriber.email} for letter #${letterId}`);
           }
