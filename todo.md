@@ -886,3 +886,11 @@
 - [x] Mark draftReminderSentAt after sending to prevent duplicate sends
 - [x] Write tests: 10/10 passing in phase71-draft-reminders.test.ts, 0 TypeScript errors
 - [x] Save checkpoint
+
+## Phase 72: Letter History Page
+- [ ] Audit existing subscriber pages, letter tRPC procedures, and routing
+- [ ] Build LetterHistory page: status cards, filter by status, sort by date/type, empty state
+- [ ] Status badge with human-friendly labels and color coding
+- [ ] Quick-action buttons: View Draft, Pay for Review ($200), Download PDF (approved only)
+- [ ] Wire /letters route and add nav entry to subscriber dashboard
+- [ ] Write tests and save checkpoint
