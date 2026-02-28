@@ -69,6 +69,7 @@ import {
   sendLetterUnlockedEmail,
   sendStatusUpdateEmail,
   sendVerificationEmail,
+  sendReviewAssignedEmail,
 } from "./email";
 import { runFullPipeline, retryPipelineFromStage } from "./pipeline";
 import { generateAndUploadApprovedPdf } from "./pdfGenerator";
@@ -452,7 +453,30 @@ export const appRouter = router({
             body: `An attorney has claimed your letter "${letter.subject}" and is currently reviewing it.`,
             link: `/letters/${input.letterId}`,
           });
-        } catch (err) { console.error("[Notify] Claim notification failed:", err); }
+        } catch (err) { console.error("[Notify] Claim subscriber notification failed:", err); }
+        // ── Notify attorney: review assignment confirmation ──
+        try {
+          const attorney = await getUserById(ctx.user.id);
+          const appUrl = getAppUrl(ctx.req);
+          const subscriber = await getUserById(letter.userId);
+          if (attorney?.email) {
+            const jurisdiction = [
+              letter.jurisdictionCity,
+              letter.jurisdictionState,
+              letter.jurisdictionCountry,
+            ].filter(Boolean).join(", ") || "Not specified";
+            await sendReviewAssignedEmail({
+              to: attorney.email,
+              name: attorney.name ?? "Attorney",
+              letterSubject: letter.subject,
+              letterId: input.letterId,
+              letterType: letter.letterType,
+              jurisdiction,
+              subscriberName: subscriber?.name ?? "Subscriber",
+              appUrl,
+            });
+          }
+        } catch (err) { console.error("[Notify] Claim attorney notification failed:", err); }
         return { success: true };
       }),
 

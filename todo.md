@@ -975,3 +975,9 @@
 - [x] Fix N+1 query in adminEmployeePerformance — batch into 3 queries
 - [x] Write tests for both fixes
 - [x] Save checkpoint and push to GitHub
+
+## Phase 79: Wire Attorney Review Assigned Email
+
+- [x] Wire sendAttorneyReviewAssignedEmail into claimLetterForReview tRPC procedure
+- [x] Write test for the email notification on claim
+- [x] Save checkpoint and push to GitHub
