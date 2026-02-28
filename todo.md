@@ -1119,3 +1119,10 @@
 - [x] Add Sentry breadcrumbs to critical paths (pipeline 4 catch blocks, webhook 3 catch blocks, tRPC context user)
 - [x] Verify build passes with Sentry integration (0 errors, 41 chunks)
 - [x] Run full test suite — 30 files, 617 tests (44 new Sentry tests), 0 failures
+
+## Phase 85 — Sentry Alert Rules Configuration
+- [x] Verify Sentry API authentication with auth token (org: wwwtalk-to-my-lawyercom, project: sentry-pink-notebook)
+- [x] Create alert rule: 🚨 AI Pipeline Failure (id: 16739013, filter: pipeline_stage tag)
+- [x] Create alert rule: 💳 Stripe Webhook Error (id: 16739014, filter: component=stripe_webhook)
+- [x] Create alert rule: 📈 High Error Rate Spike (id: 16739015, >10 events/hour)
+- [x] Verify all 4 alert rules active in Sentry (3 new + 1 existing high-priority)
