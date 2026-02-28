@@ -66,7 +66,7 @@ The spec defines 4 roles (`subscriber`, `employee`, `attorney_admin`, `super_adm
 
 ### RLS / Security — Status
 
-The application uses MySQL (not Postgres/Supabase), so Postgres Row Level Security is not applicable. Security is enforced at the tRPC procedure level via `subscriberProcedure`, `employeeProcedure`, and `adminProcedure` middleware guards. This is the correct approach for this stack.
+The application uses Supabase (PostgreSQL). Security is enforced at the tRPC procedure level via `subscriberProcedure`, `employeeProcedure`, and `adminProcedure` middleware guards, in addition to Supabase Row Level Security policies on the database.
 
 | Security Requirement | Status |
 |---|---|

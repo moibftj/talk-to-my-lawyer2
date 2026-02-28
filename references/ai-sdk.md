@@ -143,16 +143,16 @@ const modelMessages = await convertToModelMessages(messages);
 Store `UIMessage` objects as JSON with an explicit ordering column:
 
 ```ts
-export const messages = mysqlTable("messages", {
-  id: varchar("id", { length: 36 }).primaryKey(),
-  chatId: varchar("chatId", { length: 36 }).notNull(),
+export const messages = pgTable("messages", {
+  id: text("id").primaryKey(),
+  chatId: text("chatId").notNull(),
   content: json("content").notNull(),  // Full UIMessage object
-  ordering: int("ordering").notNull(), // Explicit order, not timestamp
+  ordering: integer("ordering").notNull(), // Explicit order, not timestamp
   createdAt: timestamp("createdAt").defaultNow(),
 });
 ```
 
-Use `ordering` instead of `createdAt` because MySQL timestamp precision can cause collisions when messages are saved in rapid succession.
+Use `ordering` instead of `createdAt` to ensure deterministic message ordering regardless of insertion timing.
 
 ---
 

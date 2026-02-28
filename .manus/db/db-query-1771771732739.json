@@ -1,9 +1,0 @@
-{
-  "query": "INSERT INTO `__drizzle_migrations` (`hash`, `created_at`) VALUES ('0001_spooky_alex_wilder', UNIX_TIMESTAMP() * 1000) ON DUPLICATE KEY UPDATE `created_at` = VALUES(`created_at`);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2nY6aM4N4o8j7TM.03f306c44314 --database m5gFtPM9Pr9uZ46M8fspGe --execute INSERT INTO `__drizzle_migrations` (`hash`, `created_at`) VALUES ('0001_spooky_alex_wilder', UNIX_TIMESTAMP() * 1000) ON DUPLICATE KEY UPDATE `created_at` = VALUES(`created_at`);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 63
-}

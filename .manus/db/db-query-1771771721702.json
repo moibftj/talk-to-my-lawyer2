@@ -1,9 +1,0 @@
-{
-  "query": "CREATE INDEX idx_letter_requests_userId ON letter_requests(userId);\nCREATE INDEX idx_letter_requests_status ON letter_requests(status);\nCREATE INDEX idx_letter_requests_assignedReviewerId ON letter_requests(assignedReviewerId);\nCREATE INDEX idx_letter_versions_letterRequestId ON letter_versions(letterRequestId);\nCREATE INDEX idx_review_actions_letterRequestId ON review_actions(letterRequestId);\nCREATE INDEX idx_workflow_jobs_letterRequestId_status ON workflow_jobs(letterRequestId, status);\nCREATE INDEX idx_research_runs_letterRequestId_status ON research_runs(letterRequestId, status);\nCREATE INDEX idx_attachments_letterRequestId ON attachments(letterRequestId);\nCREATE INDEX idx_notifications_userId ON notifications(userId);",
-  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2nY6aM4N4o8j7TM.03f306c44314 --database m5gFtPM9Pr9uZ46M8fspGe --execute CREATE INDEX idx_letter_requests_userId ON letter_requests(userId);\nCREATE INDEX idx_letter_requests_status ON letter_requests(status);\nCREATE INDEX idx_letter_requests_assignedReviewerId ON letter_requests(assignedReviewerId);\nCREATE INDEX idx_letter_versions_letterRequestId ON letter_versions(letterRequestId);\nCREATE INDEX idx_review_actions_letterRequestId ON review_actions(letterRequestId);\nCREATE INDEX idx_workflow_jobs_letterRequestId_status ON workflow_jobs(letterRequestId, status);\nCREATE INDEX idx_research_runs_letterRequestId_status ON research_runs(letterRequestId, status);\nCREATE INDEX idx_attachments_letterRequestId ON attachments(letterRequestId);\nCREATE INDEX idx_notifications_userId ON notifications(userId);",
-  "rows": [],
-  "messages": [],
-  "stdout": "",
-  "stderr": "",
-  "execution_time_ms": 5249
-}

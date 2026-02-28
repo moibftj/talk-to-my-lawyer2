@@ -65,12 +65,8 @@ Attorneys use the `employee` role and access the review center.
 ```
 **Reality:** `server/routers.ts` lines 93–98 has a dedicated `attorneyProcedure`. `client/src/App.tsx` lines 104–131 gates `/attorney/*` and `/review/*` to `["attorney", "admin"]`, not employee. The 4-role system has been live since Phase 57.
 
-**Line 69 — Claims MySQL, says RLS not applicable:**
-```
-The application uses MySQL (not Postgres/Supabase), so Postgres Row Level
-Security is not applicable.
-```
-**Reality:** `drizzle/schema.ts` line 1 imports `pgTable`, `pgEnum` from `drizzle-orm/pg-core`. `drizzle/migrations/0002_rls_policies_and_indexes.sql` enables RLS on all 9 tables. The migration to Supabase PostgreSQL happened in Phase 33 (confirmed in `todo.md`).
+**Line 69 — Previously claimed MySQL (now corrected):**
+The application uses Supabase (PostgreSQL). `drizzle/schema.ts` line 1 imports `pgTable`, `pgEnum` from `drizzle-orm/pg-core`. `drizzle/migrations/0002_rls_policies_and_indexes.sql` enables RLS on all 9 tables. The migration to Supabase PostgreSQL happened in Phase 33 (confirmed in `todo.md`). `SPEC_COMPLIANCE.md` line 69 has been updated to reflect this.
 
 ---
 

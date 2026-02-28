@@ -443,7 +443,7 @@ The platform has been built across **72 phases** (Phases 1–72), with major mil
 
 - **Phase 12:** Stripe payment integration
 
-- **Phase 33:** Database migration from TiDB (MySQL) to Supabase (PostgreSQL)
+- **Phase 33:** Database migration to Supabase (PostgreSQL)
 
 - **Phase 34:** Supabase RLS, atomic functions, Realtime
 

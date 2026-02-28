@@ -48,14 +48,14 @@ describe("Drizzle PostgreSQL Schema", () => {
 describe("Database connection URL resolution", () => {
   it("prefers SUPABASE_DATABASE_URL over DATABASE_URL when both set", () => {
     const supabaseUrl = "postgresql://postgres.abc123:pass@aws-1-us-east-2.pooler.supabase.com:6543/postgres";
-    const tidbUrl = "mysql://user:pass@tidb.example.com:4000/db";
+    const fallbackUrl = "postgresql://user:pass@other-db.example.com:5432/db";
 
     // Simulate the resolution logic from db.ts
     const resolveDbUrl = (supabaseDbUrl?: string, databaseUrl?: string) =>
       supabaseDbUrl || databaseUrl;
 
-    expect(resolveDbUrl(supabaseUrl, tidbUrl)).toBe(supabaseUrl);
-    expect(resolveDbUrl(undefined, tidbUrl)).toBe(tidbUrl);
+    expect(resolveDbUrl(supabaseUrl, fallbackUrl)).toBe(supabaseUrl);
+    expect(resolveDbUrl(undefined, fallbackUrl)).toBe(fallbackUrl);
     expect(resolveDbUrl(supabaseUrl, undefined)).toBe(supabaseUrl);
     expect(resolveDbUrl(undefined, undefined)).toBeUndefined();
   });
@@ -64,7 +64,7 @@ describe("Database connection URL resolution", () => {
     const isSupabase = (url: string) => url.includes("supabase");
     expect(isSupabase("postgresql://postgres.abc@aws-1-us-east-2.pooler.supabase.com:6543/postgres")).toBe(true);
     expect(isSupabase("postgresql://postgres:pass@db.abc.supabase.co:5432/postgres")).toBe(true);
-    expect(isSupabase("mysql://user:pass@tidb.example.com:4000/db")).toBe(false);
+    expect(isSupabase("postgresql://user:pass@other-db.example.com:5432/db")).toBe(false);
   });
 });
 

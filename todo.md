@@ -988,3 +988,11 @@
 - [x] Wire sendEmployeeCommissionEmail into commission creation block
 - [x] Write tests for the commission email notification
 - [x] Save checkpoint and push to GitHub
+
+## Phase 81: Full MySQL/TiDB Removal — Supabase Migration Cleanup
+- [x] Audit all MySQL/TiDB references across entire codebase (9 files + 40 stale .manus/db logs)
+- [x] Remove MySQL from source code: db.ts TiDB fallback log, migration SQL comments
+- [x] Remove MySQL from docs: SPEC_COMPLIANCE.md, CODE_REVIEW_VERIFIED.md, FEATURE_MAP.md, VALIDATION_REPORT_PHASE73.md, references/ai-sdk.md
+- [x] Remove MySQL from tests: supabase-migration.test.ts TiDB URL test data replaced with generic PostgreSQL URL
+- [x] Deleted all 40 stale .manus/db log files containing TiDB/MySQL error output
+- [x] Save checkpoint and push to GitHub

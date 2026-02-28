@@ -35,7 +35,7 @@ The platform has been built across 73 phases. The table below summarizes the com
 | 30 | Enhanced subscriber dashboard | **Complete** | 26 new tests, auto-polling |
 | 31 | Attorney review modal (Tiptap) | **Complete** | Rich text editor, 31 tests |
 | 32 | Full pipeline architecture audit | **Complete** | PDF upgrade, 153 tests |
-| 33 | DB migration TiDB → Supabase | **Complete** | PostgreSQL, 11 migration tests |
+| 33 | DB migration to Supabase | **Complete** | PostgreSQL, 11 migration tests |
 | 34 | Supabase-native enhancements | **Complete** | RLS, atomic functions, realtime |
 | 35 | Supabase Auth (branded login) | **Complete** | 180 tests |
 | 36 | OAuth redirect + SEO fix | **Complete** | |

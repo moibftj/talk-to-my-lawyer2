@@ -21,11 +21,9 @@ import { ENV } from "./_core/env";
 let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
-  // SUPABASE_DATABASE_URL takes priority over the platform-injected TiDB DATABASE_URL
   const dbUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
   if (!_db && dbUrl) {
     try {
-      const isSupabase = dbUrl.includes('supabase');
       const client = postgres(dbUrl, {
         ssl: 'require',
         max: 10,
@@ -33,7 +31,7 @@ export async function getDb() {
         connect_timeout: 10,
       });
       _db = drizzle(client);
-      console.log(`[Database] Connected to ${isSupabase ? 'Supabase (PostgreSQL)' : 'TiDB'}`);
+      console.log('[Database] Connected to Supabase (PostgreSQL)');
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;

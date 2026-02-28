@@ -1,5 +1,5 @@
 -- Talk-to-My-Lawyer: Initial PostgreSQL Schema Migration
--- Migrated from TiDB (MySQL) to Supabase (PostgreSQL)
+-- Supabase (PostgreSQL) schema
 -- 12 enums, 9 tables, 7 indexes
 
 -- ═══════════════════════════════════════════════════════
@@ -214,7 +214,7 @@ CREATE INDEX IF NOT EXISTS "idx_workflow_jobs_letter_request_status" ON "workflo
 
 -- ═══════════════════════════════════════════════════════
 -- AUTO-UPDATE TRIGGER for updated_at columns
--- (PostgreSQL equivalent of MySQL ON UPDATE CURRENT_TIMESTAMP)
+-- Auto-update timestamp on row changes
 -- ═══════════════════════════════════════════════════════
 
 CREATE OR REPLACE FUNCTION update_updated_at_column()
