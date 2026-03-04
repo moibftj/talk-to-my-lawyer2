@@ -240,14 +240,14 @@ import type { TrpcContext } from "./_core/context";
 type CookieCall = { name: string; options: Record<string, unknown> };
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
-function createAuthContext(role: "user" | "admin" = "user"): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
+function createAuthContext(role: "subscriber" | "admin" = "subscriber"): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
   const clearedCookies: CookieCall[] = [];
   const user: AuthenticatedUser = {
     id: 1,
     openId: "sample-user",
     email: "sample@example.com",
     name: "Sample User",
-    loginMethod: "manus",
+    loginMethod: "email",
     role,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -292,13 +292,11 @@ describe("auth.logout", () => {
 // ============================================================================
 describe("RBAC: Role-based access control", () => {
   it("subscriber cannot access admin procedures", async () => {
-    const { ctx } = createAuthContext("user");
-    // Subscriber role is 'user' in the base template, but we extend it
-    // Just verify the auth.me returns the user
+    const { ctx } = createAuthContext("subscriber");
     const caller = appRouter.createCaller(ctx);
     const me = await caller.auth.me();
     expect(me).toBeDefined();
-    expect(me?.role).toBe("user");
+    expect(me?.role).toBe("subscriber");
   });
 
   it("admin can access auth.me", async () => {

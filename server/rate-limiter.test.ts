@@ -14,9 +14,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Redis } from "@upstash/redis";
 
+const UPSTASH_CONFIGURED = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+
 // ─── Credential Validation ────────────────────────────────────────────────────
 
-describe("Upstash Redis Credentials", () => {
+describe.skipIf(!UPSTASH_CONFIGURED)("Upstash Redis Credentials", () => {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 

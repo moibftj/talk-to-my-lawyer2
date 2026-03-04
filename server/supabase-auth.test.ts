@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 
-describe("Supabase Auth Configuration", () => {
+const SUPABASE_CONFIGURED = !!(
+  (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL) &&
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+describe.skipIf(!SUPABASE_CONFIGURED)("Supabase Auth Configuration", () => {
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const anonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;

@@ -1,14 +1,20 @@
 import { describe, it, expect } from "vitest";
 
-describe("Supabase Realtime Configuration", () => {
+const SUPABASE_REALTIME_CONFIGURED = !!(
+  process.env.VITE_SUPABASE_URL &&
+  (process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY) &&
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+describe.skipIf(!SUPABASE_REALTIME_CONFIGURED)("Supabase Realtime Configuration", () => {
   it("VITE_SUPABASE_URL is set and valid", () => {
     const url = process.env.VITE_SUPABASE_URL;
     expect(url).toBeDefined();
     expect(url).toMatch(/^https:\/\/.*\.supabase\.co$/);
   });
 
-  it("VITE_SUPABASE_PUBLISHABLE_KEY is set and has correct format", () => {
-    const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  it("VITE_SUPABASE_PUBLISHABLE_KEY (or anon key) is set and has correct format", () => {
+    const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     expect(key).toBeDefined();
     // Accept both modern publishable key (sb_publishable_*) and legacy anon JWT key (eyJ*)
     const isPublishable = key!.startsWith("sb_publishable_");
@@ -19,7 +25,7 @@ describe("Supabase Realtime Configuration", () => {
 
   it("Supabase REST API is reachable with publishable key", async () => {
     const url = process.env.VITE_SUPABASE_URL;
-    const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
     
     // The publishable key should be able to reach the REST API
     // Note: /rest/v1/ root requires admin role — use a table query instead
@@ -45,7 +51,7 @@ describe("Supabase Realtime Configuration", () => {
   describe("RLS Helper Functions", () => {
     it("app_user_id function exists in database", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       const response = await fetch(`${url}/rest/v1/rpc/app_user_id`, {
         method: "POST",
@@ -62,7 +68,7 @@ describe("Supabase Realtime Configuration", () => {
 
     it("is_app_admin function exists in database", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       const response = await fetch(`${url}/rest/v1/rpc/is_app_admin`, {
         method: "POST",
@@ -78,7 +84,7 @@ describe("Supabase Realtime Configuration", () => {
 
     it("safe_status_transition function exists in database", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       // Just check the function exists (will fail with bad params, but not 404)
       const response = await fetch(`${url}/rest/v1/rpc/safe_status_transition`, {
@@ -96,7 +102,7 @@ describe("Supabase Realtime Configuration", () => {
 
     it("check_and_deduct_allowance function exists in database", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       const response = await fetch(`${url}/rest/v1/rpc/check_and_deduct_allowance`, {
         method: "POST",
@@ -114,7 +120,7 @@ describe("Supabase Realtime Configuration", () => {
   describe("Database Tables via REST", () => {
     it("letter_requests table is accessible", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       const response = await fetch(`${url}/rest/v1/letter_requests?select=id&limit=1`, {
         headers: {
@@ -128,7 +134,7 @@ describe("Supabase Realtime Configuration", () => {
 
     it("audit_log table is accessible", async () => {
       const url = process.env.VITE_SUPABASE_URL;
-      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
       
       const response = await fetch(`${url}/rest/v1/audit_log?select=id&limit=1`, {
         headers: {

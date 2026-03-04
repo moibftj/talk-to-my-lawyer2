@@ -210,9 +210,8 @@ describe("My Letters page", () => {
         "utf-8"
       )
     );
-    expect(source).toContain("PDF Ready");
     expect(source).toContain("pdfUrl");
-    expect(source).toContain("Download");
+    expect(source).toContain("Download PDF");
   });
 
   it("shows approved letter with green styling", async () => {
