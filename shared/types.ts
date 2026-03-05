@@ -10,8 +10,9 @@ export * from "./_core/errors";
 export const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   submitted: ["researching"],
   researching: ["drafting"],
-  drafting: ["generated_locked"], // AI pipeline always ends here
+  drafting: ["generated_locked", "generated_unlocked"], // AI ends at generated_locked (paid) or generated_unlocked (first letter free preview)
   generated_locked: ["pending_review"], // subscriber pays $200 → Stripe webhook transitions to pending_review
+  generated_unlocked: ["pending_review"], // first-letter user clicks "Send for Attorney Review"
   pending_review: ["under_review"],
   under_review: ["approved", "rejected", "needs_changes"],
   needs_changes: ["researching", "drafting"],

@@ -891,6 +891,49 @@ export const appRouter = router({
         return { success: true, free: true };
       }),
 
+    // ─── Send for Review: generated_unlocked → pending_review (first-letter free path) ───
+    sendForReview: subscriberProcedure
+      .input(z.object({ letterId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const letter = await getLetterRequestSafeForSubscriber(input.letterId, ctx.user.id);
+        if (!letter) throw new TRPCError({ code: "NOT_FOUND", message: "Letter not found" });
+        if (letter.status !== "generated_unlocked")
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Letter must be in generated_unlocked status to send for review" });
+
+        await updateLetterStatus(input.letterId, "pending_review");
+        await logReviewAction({
+          letterRequestId: input.letterId,
+          reviewerId: ctx.user.id,
+          actorType: "subscriber",
+          action: "free_unlock",
+          noteText: "First letter — subscriber sent for free attorney review.",
+          noteVisibility: "internal",
+          fromStatus: "generated_unlocked",
+          toStatus: "pending_review",
+        });
+
+        try {
+          await sendLetterUnlockedEmail({
+            to: ctx.user.email ?? "",
+            name: ctx.user.name ?? "Subscriber",
+            subject: letter.subject,
+            letterId: input.letterId,
+            appUrl: getAppUrl(ctx.req),
+          });
+          await sendNewReviewNeededEmail({
+            to: "",
+            name: "Attorney Team",
+            letterSubject: letter.subject,
+            letterId: input.letterId,
+            letterType: letter.letterType,
+            jurisdiction: letter.jurisdictionState ?? "Unknown",
+            appUrl: getAppUrl(ctx.req),
+          });
+        } catch (e) { console.error("[sendForReview] Email error:", e); }
+
+        return { success: true };
+      }),
+
      // ─── Pay Trial Review: generated_unlocked → Stripe $50 checkout for first-letter attorney review ───
     payTrialReview: subscriberProcedure
       .input(z.object({ letterId: z.number(), discountCode: z.string().optional() }))

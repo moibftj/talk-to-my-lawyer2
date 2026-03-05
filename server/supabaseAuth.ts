@@ -301,7 +301,9 @@ export function registerSupabaseAuthRoutes(app: Express) {
         try {
           const admin = getAdminClient();
           await admin.auth.admin.signOut(data.user.id);
-        } catch {}
+        } catch (signOutErr) {
+          console.error("[SupabaseAuth] Failed to sign out unverified user from Supabase:", signOutErr);
+        }
         res.status(401).json({ error: "Email not verified", code: "EMAIL_NOT_VERIFIED" });
         return;
       }
