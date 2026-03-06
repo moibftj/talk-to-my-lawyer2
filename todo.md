@@ -6,7 +6,7 @@
 - [x] Global design system (color palette, typography, theme)
 
 ## Phase 2: Auth & Navigation
-- [x] Role-based user system (subscriber, employee, admin)
+- [x] Role-based user system (subscriber, employee, attorney & admin)
 - [x] Role-based routing and navigation
 - [x] DashboardLayout with sidebar for each role (AppLayout component)
 - [x] Login/auth flow with role detection and auto-redirect
