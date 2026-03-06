@@ -67,6 +67,7 @@ import {
   sendLetterSubmissionEmail,
   sendLetterReadyEmail,
   sendLetterUnlockedEmail,
+  sendLetterSubmittedForFreeReviewEmail,
   sendStatusUpdateEmail,
   sendVerificationEmail,
   sendReviewAssignedEmail,
@@ -748,9 +749,9 @@ export const appRouter = router({
           // They can also view ai_draft when the letter is generated_locked (paywall preview)
           if (version.versionType === "final_approved") return version;
           if (version.versionType === "ai_draft") {
-            // Verify the letter belongs to this subscriber and is in generated_locked
+            // Verify the letter belongs to this subscriber and is in generated_locked or generated_unlocked
             const letter = await getLetterRequestById(version.letterRequestId);
-            if (letter && letter.userId === ctx.user.id && letter.status === "generated_locked") {
+            if (letter && letter.userId === ctx.user.id && (letter.status === "generated_locked" || letter.status === "generated_unlocked")) {
               return version;
             }
           }
@@ -841,18 +842,18 @@ export const appRouter = router({
         if (letter.status !== "generated_locked")
           throw new TRPCError({ code: "BAD_REQUEST", message: "Letter is not in generated_locked status" });
 
-        // Verify they actually qualify for free first letter
+        // Verify eligibility: no prior completed letters for this user
         const db = await (await import("./db")).getDb();
         if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const { letterRequests } = await import("../drizzle/schema");
+        const { letterRequests: lr } = await import("../drizzle/schema");
         const { eq: eqOp, and: andOp, notInArray: notInOp } = await import("drizzle-orm");
-        const paidLetters = await db.select({ id: letterRequests.id })
-          .from(letterRequests)
+        const priorCompleted = await db.select({ id: lr.id })
+          .from(lr)
           .where(andOp(
-            eqOp(letterRequests.userId, ctx.user.id),
-            notInOp(letterRequests.status, ["submitted", "researching", "drafting", "generated_locked"])
+            eqOp(lr.userId, ctx.user.id),
+            notInOp(lr.status, ["submitted", "researching", "drafting", "generated_locked", "generated_unlocked"])
           ));
-        if (paidLetters.length > 0)
+        if (priorCompleted.length > 0)
           throw new TRPCError({ code: "BAD_REQUEST", message: "Free first letter has already been used." });
 
         // Transition to pending_review
@@ -877,18 +878,73 @@ export const appRouter = router({
             letterId: input.letterId,
             appUrl: getAppUrl(ctx.req),
           });
-          await sendNewReviewNeededEmail({
-            to: "", // Will use admin email from config
-            name: "Attorney Team",
-            letterSubject: letter.subject,
-            letterId: input.letterId,
-            letterType: letter.letterType,
-            jurisdiction: letter.jurisdictionState ?? "Unknown",
-            appUrl: getAppUrl(ctx.req),
-          });
+          const appUrl = getAppUrl(ctx.req);
+          const employees = await getAllUsers("employee");
+          for (const emp of employees) {
+            if (emp.email) {
+              await sendNewReviewNeededEmail({
+                to: emp.email,
+                name: emp.name ?? "Attorney",
+                letterSubject: letter.subject,
+                letterId: input.letterId,
+                letterType: letter.letterType,
+                jurisdiction: letter.jurisdictionState ?? "Unknown",
+                appUrl,
+              });
+            }
+          }
         } catch (e) { console.error("[freeUnlock] Email error:", e); }
 
         return { success: true, free: true };
+      }),
+
+    // ─── Send for Review: generated_unlocked → pending_review (first-letter free path) ───
+    sendForReview: subscriberProcedure
+      .input(z.object({ letterId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const letter = await getLetterRequestSafeForSubscriber(input.letterId, ctx.user.id);
+        if (!letter) throw new TRPCError({ code: "NOT_FOUND", message: "Letter not found" });
+        if (letter.status !== "generated_unlocked")
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Letter must be in generated_unlocked status to send for review" });
+
+        await updateLetterStatus(input.letterId, "pending_review");
+        await logReviewAction({
+          letterRequestId: input.letterId,
+          reviewerId: ctx.user.id,
+          actorType: "subscriber",
+          action: "free_unlock",
+          noteText: "First letter — subscriber sent for free attorney review.",
+          noteVisibility: "internal",
+          fromStatus: "generated_unlocked",
+          toStatus: "pending_review",
+        });
+
+        try {
+          await sendLetterSubmittedForFreeReviewEmail({
+            to: ctx.user.email ?? "",
+            name: ctx.user.name ?? "Subscriber",
+            subject: letter.subject,
+            letterId: input.letterId,
+            appUrl: getAppUrl(ctx.req),
+          });
+          const appUrl = getAppUrl(ctx.req);
+          const employees = await getAllUsers("employee");
+          for (const emp of employees) {
+            if (emp.email) {
+              await sendNewReviewNeededEmail({
+                to: emp.email,
+                name: emp.name ?? "Attorney",
+                letterSubject: letter.subject,
+                letterId: input.letterId,
+                letterType: letter.letterType,
+                jurisdiction: letter.jurisdictionState ?? "Unknown",
+                appUrl,
+              });
+            }
+          }
+        } catch (e) { console.error("[sendForReview] Email error:", e); }
+
+        return { success: true };
       }),
 
      // ─── Pay Trial Review: generated_unlocked → Stripe $50 checkout for first-letter attorney review ───

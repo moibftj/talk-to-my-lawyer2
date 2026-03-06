@@ -122,11 +122,11 @@ export async function processDraftReminders(): Promise<ReminderResult> {
 // ─── Express Route Registration ───────────────────────────────────────────────
 
 /**
- * Register POST /api/cron/draft-reminders
+ * Register GET|POST /api/cron/draft-reminders
  *
- * Secured by CRON_SECRET environment variable.
- * Call this endpoint from an external cron service (e.g. cron-job.org, GitHub Actions)
- * every hour. The handler is idempotent — letters already reminded are skipped.
+ * Accepts both GET (Vercel Cron) and POST (external services / manual trigger).
+ * Secured by CRON_SECRET environment variable — always required when set.
+ * The x-vercel-cron header is NOT used as an auth bypass (it can be spoofed).
  *
  * Headers required:
  *   Authorization: Bearer <CRON_SECRET>
@@ -137,8 +137,12 @@ export async function processDraftReminders(): Promise<ReminderResult> {
  *   500 on unexpected error
  */
 export function registerDraftRemindersRoute(app: Express): void {
-  app.post("/api/cron/draft-reminders", async (req: Request, res: Response) => {
+  // Accept both GET (Vercel Cron) and POST (external cron services / manual trigger).
+  app.all("/api/cron/draft-reminders", async (req: Request, res: Response) => {
     // ── Auth guard ──────────────────────────────────────────────────────────
+    // Always validate CRON_SECRET when set. The x-vercel-cron header is NOT
+    // treated as a bypass — any caller can add that header, so it would be a
+    // security hole. Require a valid Bearer token regardless of origin.
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret) {
       const authHeader = req.headers["authorization"] ?? "";
@@ -158,5 +162,5 @@ export function registerDraftRemindersRoute(app: Express): void {
     }
   });
 
-  console.log("[DraftReminders] Route registered: POST /api/cron/draft-reminders");
+  console.log("[DraftReminders] Route registered: GET|POST /api/cron/draft-reminders");
 }

@@ -1,24 +1,21 @@
 import { CheckCircle2, Circle, Clock, AlertTriangle, XCircle, Loader2, FileCheck, Gavel } from "lucide-react";
 
 /**
- * Simplified status timeline for the new flow:
- *   submitted → researching → drafting → generated_locked → pending_review → under_review → approved/rejected/needs_changes
+ * Status timeline for the flow:
+ *   submitted → researching → drafting → generated_locked | generated_unlocked → pending_review → under_review → approved/rejected/needs_changes
  *
- * generated_unlocked is kept as a legacy alias for generated_locked (same step, same label).
+ * generated_locked: repeat users must pay to submit for review
+ * generated_unlocked: first-letter free — AI draft visible, subscriber can send for attorney review at no extra cost
  */
 const STATUS_STEPS = [
-  { key: "submitted",        label: "Submitted",         description: "Intake received" },
-  { key: "researching",      label: "Researching",       description: "Legal research in progress" },
-  { key: "drafting",         label: "Drafting",          description: "Letter being drafted" },
-  { key: "generated_locked", label: "Draft Ready",       description: "Pay to submit for review" },
-  { key: "pending_review",   label: "Awaiting Review",   description: "In the attorney queue" },
-  { key: "under_review",     label: "Under Review",      description: "Attorney reviewing" },
+  { key: "submitted",           label: "Submitted",         description: "Intake received" },
+  { key: "researching",         label: "Researching",       description: "Legal research in progress" },
+  { key: "drafting",            label: "Drafting",          description: "Letter being drafted" },
+  { key: "generated_locked",    label: "Draft Ready",       description: "Pay to submit for review" },
+  { key: "generated_unlocked",  label: "AI Draft Ready",    description: "Send for attorney review — included free" },
+  { key: "pending_review",      label: "Awaiting Review",   description: "In the attorney queue" },
+  { key: "under_review",        label: "Under Review",      description: "Attorney reviewing" },
 ] as const;
-
-// generated_unlocked maps to the same step index as generated_locked (legacy)
-const STATUS_KEY_MAP: Record<string, string> = {
-  generated_unlocked: "generated_locked",
-};
 
 const TERMINAL_STATUSES: Record<string, { label: string; icon: typeof CheckCircle2; color: string }> = {
   approved:      { label: "Approved",          icon: CheckCircle2,  color: "text-emerald-500" },
@@ -32,26 +29,37 @@ interface StatusTimelineProps {
 }
 
 export default function StatusTimeline({ currentStatus, className }: StatusTimelineProps) {
-  // Normalise legacy status aliases
-  const normalisedStatus = STATUS_KEY_MAP[currentStatus] ?? currentStatus;
-  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === normalisedStatus);
   const isTerminal = currentStatus in TERMINAL_STATUSES;
+
+  // Show the generated_unlocked step only when the letter is currently at that status.
+  // For all other statuses (including pending_review and beyond) default to the
+  // generated_locked step so paying users never see the free-path step in their timeline.
+  const isUnlockedPath = currentStatus === "generated_unlocked";
+
+  const visibleSteps = STATUS_STEPS.filter((step) => {
+    if (step.key === "generated_locked" && isUnlockedPath) return false;
+    if (step.key === "generated_unlocked" && !isUnlockedPath) return false;
+    return true;
+  });
+
+  const visibleIdx = visibleSteps.findIndex((s) => s.key === currentStatus);
 
   return (
     <div className={`space-y-1 ${className ?? ""}`}>
       <h4 className="text-sm font-semibold text-muted-foreground mb-3">Progress</h4>
       <div className="relative">
-        {STATUS_STEPS.map((step, idx) => {
-          const isComplete = currentIdx > idx || isTerminal;
-          const isCurrent = currentIdx === idx && !isTerminal;
+        {visibleSteps.map((step, idx) => {
+          const isComplete = visibleIdx > idx || isTerminal;
+          const isCurrent = visibleIdx === idx && !isTerminal;
           const isInProgress = isCurrent && (step.key === "researching" || step.key === "drafting");
-          const isDraftReady = isCurrent && step.key === "generated_locked";
+          const isDraftLocked = isCurrent && step.key === "generated_locked";
+          const isDraftUnlocked = isCurrent && step.key === "generated_unlocked";
           const isWaiting = isCurrent && (step.key === "pending_review" || step.key === "under_review");
 
           return (
             <div key={step.key} className="flex items-start gap-3 relative">
               {/* Vertical connector line */}
-              {idx < STATUS_STEPS.length - 1 && (
+              {idx < visibleSteps.length - 1 && (
                 <div
                   className={`absolute left-[11px] top-[24px] w-0.5 h-6 ${
                     isComplete ? "bg-emerald-500" : "bg-border"
@@ -65,8 +73,10 @@ export default function StatusTimeline({ currentStatus, className }: StatusTimel
                 ) : isCurrent ? (
                   isInProgress ? (
                     <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
-                  ) : isDraftReady ? (
+                  ) : isDraftLocked ? (
                     <FileCheck className="w-6 h-6 text-yellow-500" />
+                  ) : isDraftUnlocked ? (
+                    <CheckCircle2 className="w-6 h-6 text-green-500" />
                   ) : isWaiting ? (
                     <Gavel className="w-6 h-6 text-amber-500" />
                   ) : (
@@ -82,8 +92,10 @@ export default function StatusTimeline({ currentStatus, className }: StatusTimel
                   className={`text-sm block ${
                     isComplete
                       ? "text-emerald-600 font-medium"
-                      : isDraftReady
+                      : isDraftLocked
                       ? "text-yellow-700 font-semibold"
+                      : isDraftUnlocked
+                      ? "text-green-700 font-semibold"
                       : isWaiting
                       ? "text-amber-600 font-semibold"
                       : isCurrent
@@ -93,7 +105,8 @@ export default function StatusTimeline({ currentStatus, className }: StatusTimel
                 >
                   {step.label}
                   {isInProgress && <span className="ml-2 text-xs text-blue-400">(in progress...)</span>}
-                  {isDraftReady && <span className="ml-2 text-xs text-yellow-500">(payment required)</span>}
+                  {isDraftLocked && <span className="ml-2 text-xs text-yellow-500">(payment required)</span>}
+                  {isDraftUnlocked && <span className="ml-2 text-xs text-green-500">(free)</span>}
                 </span>
                 {isCurrent && (
                   <span className="text-xs text-muted-foreground">{step.description}</span>

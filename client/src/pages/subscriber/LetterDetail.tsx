@@ -59,6 +59,7 @@ export default function LetterDetail() {
         researching: "Our team is researching your legal situation...",
         drafting: "Drafting your letter...",
         generated_locked: "Your letter draft is ready!",
+        generated_unlocked: "Your letter draft is ready to review!",
         pending_review: "Sent to attorney review queue.",
         under_review: "An attorney is reviewing your letter.",
         approved: "Your letter has been approved!",
@@ -80,6 +81,17 @@ export default function LetterDetail() {
       window.history.back();
     },
     onError: (err: any) => toast.error("Could not archive letter", { description: err.message }),
+  });
+
+  const sendForReviewMutation = trpc.billing.sendForReview.useMutation({
+    onSuccess: () => {
+      toast.success("Letter sent for attorney review!", {
+        description: "A licensed attorney will review your letter. You'll receive an email when it's approved.",
+        duration: 6000,
+      });
+      utils.letters.detail.invalidate({ id: letterId });
+    },
+    onError: (err: any) => toast.error("Could not submit letter", { description: err.message }),
   });
 
   const handleCopyToClipboard = () => {
@@ -209,6 +221,7 @@ export default function LetterDetail() {
   const userVisibleActions = actions?.filter((a) => a.noteVisibility === "user_visible" && a.noteText);
   const isPolling = POLLING_STATUSES.includes(letter.status);
   const isGeneratedLocked = letter.status === "generated_locked";
+  const isGeneratedUnlocked = letter.status === "generated_unlocked";
 
   return (
     <AppLayout breadcrumb={[{ label: "My Letters", href: "/letters" }, { label: letter.subject }]}>
@@ -304,6 +317,66 @@ export default function LetterDetail() {
           />
         )}
 
+        {/* ── FREE PREVIEW: generated_unlocked — full draft visible + "Send for Review" CTA ── */}
+        {isGeneratedUnlocked && (
+          <div className="space-y-5">
+            {aiDraftVersion?.content && (
+              <Card>
+                <CardContent className="p-0 overflow-hidden rounded-xl">
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <FileText className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">Your AI Draft</span>
+                      <span className="text-xs text-muted-foreground ml-auto">Full preview — attorney review included free</span>
+                    </div>
+                    <pre className="text-sm text-foreground whitespace-pre-wrap font-mono leading-relaxed">
+                      {aiDraftVersion.content}
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <div className="bg-gradient-to-r from-emerald-700 to-emerald-500 rounded-2xl p-6 text-white shadow-lg">
+              <div className="flex items-start gap-4 mb-5">
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold leading-tight">Your First Letter is Free!</h2>
+                  <p className="text-sm text-white/80 mt-1">
+                    Review your AI draft above. When you're ready, submit it for free attorney review.
+                    A licensed attorney will review, edit if needed, and approve your letter.
+                  </p>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <span className="text-3xl font-extrabold text-white">$0</span>
+                  <p className="text-xs text-white/60 mt-0.5">Free · Includes attorney review + PDF</p>
+                </div>
+                <Button
+                  onClick={() => sendForReviewMutation.mutate({ letterId })}
+                  disabled={sendForReviewMutation.isPending}
+                  size="lg"
+                  className="bg-white text-emerald-800 hover:bg-white/90 font-bold shadow-md w-full sm:w-auto"
+                >
+                  {sendForReviewMutation.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Send className="w-4 h-4 animate-pulse" />
+                      Submitting...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Send className="w-4 h-4" />
+                      Send for Attorney Review
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ── Pending / Under Review ── */}
         {["pending_review", "under_review"].includes(letter.status) && (
           <Card className="border-amber-200 bg-amber-50/30">
@@ -326,7 +399,7 @@ export default function LetterDetail() {
         )}
 
         {/* Attorney Notes (user-visible only) */}
-        {!isGeneratedLocked && userVisibleActions && userVisibleActions.length > 0 && (
+        {!isGeneratedLocked && !isGeneratedUnlocked && userVisibleActions && userVisibleActions.length > 0 && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm flex items-center gap-2">

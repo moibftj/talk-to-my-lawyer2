@@ -448,17 +448,41 @@ export async function runAssemblyStage(
     await updateLetterVersionPointers(letterId, { currentAiDraftVersionId: versionId });
     await updateWorkflowJob(jobId, { status: "completed", completedAt: new Date(), responsePayloadJson: { versionId } });
 
-    // Pipeline always ends at generated_locked — subscriber sees blurred draft and pays $200 to send for attorney review.
-    // Subscribers with active plans also land here; the paywall will offer them a free-unlock path.
+    // Determine whether this is the user's first letter (eligible for free preview).
+    // "first letter" = no prior letters beyond early pipeline stages for this user.
     const letterRecord = await getLetterById(letterId);
-    const finalStatus = "generated_locked";
+    let finalStatus: "generated_locked" | "generated_unlocked" = "generated_locked";
+
+    if (letterRecord?.userId) {
+      const { getDb } = await import("./db");
+      const { letterRequests: lr } = await import("../drizzle/schema");
+      const { eq: eqOp, and: andOp, ne: neOp, notInArray: notInOp } = await import("drizzle-orm");
+      const db = await getDb();
+      if (db) {
+        const priorLetters = await db
+          .select({ id: lr.id })
+          .from(lr)
+          .where(
+            andOp(
+              eqOp(lr.userId, letterRecord.userId),
+              neOp(lr.id, letterId),
+              notInOp(lr.status, ["submitted", "researching", "drafting", "generated_locked", "generated_unlocked"])
+            )
+          );
+        if (priorLetters.length === 0) {
+          finalStatus = "generated_unlocked";
+        }
+      }
+    }
 
     await updateLetterStatus(letterId, finalStatus);
     await logReviewAction({
       letterRequestId: letterId,
       actorType: "system",
       action: "ai_pipeline_completed",
-      noteText: `Draft ready. Our legal team has completed research (Perplexity) and drafting (Anthropic). Submit for attorney review to receive your finalised letter.`,
+      noteText: finalStatus === "generated_unlocked"
+        ? `Your AI-drafted letter is ready to review in full. When you're satisfied, click "Send for Attorney Review" — a licensed attorney will review and approve your letter at no charge.`
+        : `Draft ready. Our legal team has completed research (Perplexity) and drafting (Anthropic). Submit for attorney review to receive your finalised letter.`,
       noteVisibility: "user_visible",
       fromStatus: "drafting",
       toStatus: finalStatus,
