@@ -161,7 +161,7 @@ const plugins = [
     // The plugin's routerFactory is left unset here so it doesn't double-mount
     // in the existing setup, but the virtual:trpc module is still generated.
     trpc: {
-      endpoint: "/trpc",
+      endpoint: "/api/trpc",
     },
 
     // ── Supabase ─────────────────────────────────────────────────────────────

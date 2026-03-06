@@ -26,7 +26,7 @@ import type { Plugin, ViteDevServer } from "vite";
 // ─── Public API types ──────────────────────────────────────────────────────────
 
 export interface TrpcPluginOptions {
-  /** Path where the Express adapter mounts the tRPC router. Default: "/trpc" */
+  /** Path where the Express adapter mounts the tRPC router. Default: "/api/trpc" */
   endpoint?: string;
   /**
    * Factory that returns { router, createContext } when called.
@@ -123,7 +123,7 @@ function trpcVirtualModule(endpoint: string): string {
 //   • credentials: "include" (session cookies)
 
 import { createTRPCReact } from "@trpc/react-query";
-import { httpBatchLink, TRPCClientError } from "@trpc/client";
+import { httpBatchLink } from "@trpc/client";
 import superjson from "superjson";
 import type { AppRouter } from "../server/routers";
 
@@ -316,7 +316,7 @@ function validateDrizzleEnv(configFile: string | false): void {
  * export default defineConfig({
  *   plugins: [
  *     fullstackPlugin({
- *       trpc: { endpoint: "/trpc" },
+ *       trpc: { endpoint: "/api/trpc" },
  *       wouter: {
  *         routes: {
  *           home:    "/",
@@ -332,7 +332,7 @@ function validateDrizzleEnv(configFile: string | false): void {
  */
 export function fullstackPlugin(opts: FullstackPluginOptions = {}): Plugin {
   const trpcOpts: Required<TrpcPluginOptions> = {
-    endpoint: opts.trpc?.endpoint ?? "/trpc",
+    endpoint: opts.trpc?.endpoint ?? "/api/trpc",
     routerFactory: opts.trpc?.routerFactory ?? (() => Promise.resolve({ router: {}, createContext: async () => ({}) })),
   };
 
@@ -416,9 +416,9 @@ export function fullstackPlugin(opts: FullstackPluginOptions = {}): Plugin {
       // If the plugin options file changes, invalidate virtual modules
       if (file.includes("vite.config")) {
         const ids = [RESOLVED_TRPC, RESOLVED_SUPABASE, RESOLVED_ROUTER];
-        const modules = ids.flatMap(
-          (id) => server.moduleGraph.getModulesByFile(id) ?? [],
-        );
+        const modules = ids
+          .map((id) => server.moduleGraph.getModuleById(id))
+          .filter((m): m is NonNullable<typeof m> => m != null);
         server.ws.send({ type: "full-reload" });
         return [...modules];
       }
