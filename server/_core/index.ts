@@ -46,6 +46,8 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // Health check — registered first so it works even if other middleware fails
+  app.get("/health", (_req, res) => res.json({ ok: true }));
   // ⚠️ Stripe webhook MUST be registered BEFORE express.json() to get raw body
   app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), stripeWebhookHandler);
   // Configure body parser with larger size limit for file uploads

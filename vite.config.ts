@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { fullstackPlugin } from "./plugins/vite-plugin-fullstack";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -149,7 +150,61 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  vitePluginManusRuntime(),
+  vitePluginManusDebugCollector(),
+  fullstackPlugin({
+    // ── tRPC ────────────────────────────────────────────────────────────────
+    // In the real app the Express server handles /trpc via server/_core/index.ts.
+    // The plugin's routerFactory is left unset here so it doesn't double-mount
+    // in the existing setup, but the virtual:trpc module is still generated.
+    trpc: {
+      endpoint: "/api/trpc",
+    },
+
+    // ── Supabase ─────────────────────────────────────────────────────────────
+    supabase: {
+      warnOnMissingEnv: true,
+    },
+
+    // ── Drizzle ───────────────────────────────────────────────────────────────
+    drizzle: {
+      validateConnectionString: true,
+      configFile: "drizzle.config.ts",
+    },
+
+    // ── Wouter route map ──────────────────────────────────────────────────────
+    wouter: {
+      loginPath: "/login",
+      routes: {
+        home:             "/",
+        login:            "/login",
+        signup:           "/signup",
+        forgotPassword:   "/forgot-password",
+        verifyEmail:      "/verify-email",
+        dashboard:        "/dashboard",
+        letter:           "/letter/:id",
+        letterNew:        "/letter/new",
+        intake:           "/intake",
+        profile:          "/profile",
+        // Attorney / employee routes
+        review:           "/review/:id",
+        reviewQueue:      "/review/queue",
+        // Admin routes
+        admin:            "/admin",
+        adminUsers:       "/admin/users",
+        adminLetters:     "/admin/letters",
+        adminStats:       "/admin/stats",
+        // Misc
+        pricing:          "/pricing",
+        termsOfService:   "/terms",
+        privacyPolicy:    "/privacy",
+      },
+    },
+  }),
+];
 
 export default defineConfig({
   plugins,
