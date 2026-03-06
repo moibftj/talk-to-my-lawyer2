@@ -67,6 +67,7 @@ import {
   sendLetterSubmissionEmail,
   sendLetterReadyEmail,
   sendLetterUnlockedEmail,
+  sendLetterSubmittedForFreeReviewEmail,
   sendStatusUpdateEmail,
   sendVerificationEmail,
   sendReviewAssignedEmail,
@@ -919,7 +920,7 @@ export const appRouter = router({
         });
 
         try {
-          await sendLetterUnlockedEmail({
+          await sendLetterSubmittedForFreeReviewEmail({
             to: ctx.user.email ?? "",
             name: ctx.user.name ?? "Subscriber",
             subject: letter.subject,

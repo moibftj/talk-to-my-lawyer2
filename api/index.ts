@@ -12,7 +12,12 @@ let appPromise: ReturnType<typeof createApp> | null = null;
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   if (!appPromise) {
-    appPromise = createApp();
+    // Reset on failure so the next request retries initialisation rather than
+    // hanging forever on a cached rejected promise.
+    appPromise = createApp().catch((err) => {
+      appPromise = null;
+      throw err;
+    });
   }
   const app = await appPromise;
   app(req as any, res as any);

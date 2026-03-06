@@ -1,14 +1,17 @@
 /**
- * Phase 69 — Simplified Letter Flow Tests
+ * Phase 69 — Dual-Path Letter Flow Tests
  *
- * Verifies the new single-path letter lifecycle:
- *   submitted → researching → drafting → generated_locked → pending_review → under_review → approved
+ * Verifies the dual-path letter lifecycle:
+ *   submitted → researching → drafting → generated_locked  → pending_review (paid path)
+ *                                      → generated_unlocked → pending_review (free first-letter path)
+ *            → under_review → approved | rejected | needs_changes
  *
  * Key rules:
- *  - Pipeline ALWAYS ends at generated_locked (no generated_unlocked bypass)
- *  - generated_locked → pending_review ONLY via Stripe webhook (pay $200)
+ *  - Pipeline ends at generated_locked (paid) OR generated_unlocked (first-letter free)
+ *  - generated_locked → pending_review via Stripe webhook ($200)
+ *  - generated_unlocked → pending_review via sendForReview (complimentary first review)
  *  - Review queue shows only pending_review+ statuses
- *  - STATUS_CONFIG uses human-friendly labels
+ *  - STATUS_CONFIG uses human-friendly labels; generated_unlocked has its own distinct label
  */
 
 import { describe, it, expect } from "vitest";

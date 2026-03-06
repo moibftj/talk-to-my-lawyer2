@@ -466,7 +466,7 @@ export async function runAssemblyStage(
             andOp(
               eqOp(lr.userId, letterRecord.userId),
               neOp(lr.id, letterId),
-              notInOp(lr.status, ["submitted", "researching", "drafting", "generated_locked"])
+              notInOp(lr.status, ["submitted", "researching", "drafting", "generated_locked", "generated_unlocked"])
             )
           );
         if (priorLetters.length === 0) {

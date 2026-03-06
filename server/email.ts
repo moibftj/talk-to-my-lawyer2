@@ -637,6 +637,54 @@ export async function sendLetterUnlockedEmail(opts: {
   });
 }
 
+/** Confirm to subscriber that their first letter has been submitted for complimentary attorney review (no payment involved) */
+export async function sendLetterSubmittedForFreeReviewEmail(opts: {
+  to: string;
+  name: string;
+  subject: string;
+  letterId: number;
+  appUrl: string;
+}) {
+  const ctaUrl = `${opts.appUrl}/letters/${opts.letterId}`;
+  const body = `
+    <p>Hello ${opts.name},</p>
+    <p>Great news — your letter has been submitted for attorney review as part of your complimentary first-letter review. Our attorney team will review and approve your letter at no charge.</p>
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:8px;margin:20px 0;">
+      <tr><td style="padding:20px;">
+        <p style="margin:0 0 8px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#065F46;"><strong>⚖️ In Attorney Review — Complimentary</strong></p>
+        <p style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Letter:</strong> ${opts.subject}</p>
+        <p style="margin:0;font-family:Inter,Arial,sans-serif;font-size:14px;color:#374151;"><strong>Letter ID:</strong> #${opts.letterId}</p>
+      </td></tr>
+    </table>
+    <p><strong>What happens next?</strong></p>
+    <ol style="margin:8px 0;padding-left:20px;font-family:Inter,Arial,sans-serif;font-size:15px;color:#374151;line-height:1.8;">
+      <li>A licensed attorney reviews your letter for legal accuracy</li>
+      <li>They may request minor changes or approve it as-is</li>
+      <li>You'll receive an email when your letter is approved and ready to download</li>
+    </ol>
+    <p style="font-size:13px;color:#6B7280;">Attorney review typically takes 1–2 business days. You can check the status of your letter at any time in your account.</p>
+  `;
+  const html = buildEmailHtml({
+    preheader: `Your letter is now with our attorney team for complimentary review.`,
+    title: "Letter Submitted for Attorney Review ✓",
+    body,
+    ctaText: "Track Review Status",
+    ctaUrl,
+    accentColor: "#059669", // green — free/success
+  });
+  await sendEmail({
+    to: opts.to,
+    subject: `[${APP_NAME}] Your letter is in attorney review — complimentary first review`,
+    html,
+    text: buildPlainText({
+      title: "Letter Submitted for Attorney Review",
+      body: `Hello ${opts.name}, your letter "${opts.subject}" (Letter #${opts.letterId}) has been submitted for complimentary attorney review. You'll receive an email when it's approved. Track status at: ${ctaUrl}`,
+      ctaText: "Track Review Status",
+      ctaUrl,
+    }),
+  });
+}
+
 /** Send email verification link to new user */
 export async function sendVerificationEmail(opts: {
   to: string;
