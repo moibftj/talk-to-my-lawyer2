@@ -6,6 +6,12 @@ settings:
 
 overrides:
   tailwindcss>nanoid: 3.3.7
+  fast-xml-parser: ^4.0.0
+  axios>qs: ^6.13.0
+  lodash: ^4.17.21
+  lodash-es: ^4.17.21
+  rollup: ^4.27.0
+  esbuild>rollup: ^4.27.0
 
 patchedDependencies:
   wouter@3.7.1:
@@ -179,7 +185,7 @@ importers:
         specifier: ^6.0.38
         version: 6.0.38(zod@4.3.5)
       axios:
-        specifier: ^1.12.0
+        specifier: ^1.13.0
         version: 1.13.2
       class-variance-authority:
         specifier: ^0.7.1
@@ -197,7 +203,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       dompurify:
-        specifier: ^3.3.1
+        specifier: ^3.2.0
         version: 3.3.1
       dotenv:
         specifier: ^17.2.2
@@ -238,6 +244,9 @@ importers:
       pg:
         specifier: ^8.19.0
         version: 8.19.0
+      pnpm-store:
+        specifier: link:/tmp/pnpm-store
+        version: link:../../tmp/pnpm-store
       postgres:
         specifier: ^3.4.8
         version: 3.4.8
@@ -330,7 +339,7 @@ importers:
         specifier: ^0.25.0
         version: 0.25.12
       pnpm:
-        specifier: ^10.15.1
+        specifier: ^10.21.0
         version: 10.28.0
       postcss:
         specifier: ^8.4.47
@@ -3940,8 +3949,8 @@ packages:
   fast-sha256@1.3.0:
     resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
-  fast-xml-parser@5.2.5:
-    resolution: {integrity: sha512-pfX9uG9Ki0yekDHx2SiuRIyFdyAr1kMIMitPvb0YBo8SUfKvia7w7FIyd/l6av85pFYRhZscS75MwMnbvY+hcQ==}
+  fast-xml-parser@4.5.4:
+    resolution: {integrity: sha512-jE8ugADnYOBsu1uaoayVl1tVKAMNOXyjwvv2U6udEA2ORBhDooJDWoGxTkhd4Qn4yh59JVVt/pKXtjPwx9OguQ==}
     hasBin: true
 
   fdir@6.5.0:
@@ -5151,8 +5160,8 @@ packages:
       '@types/node':
         optional: true
 
-  strnum@2.1.2:
-    resolution: {integrity: sha512-l63NF9y/cLROq/yqKXSLtcMeeyOfnSQlfMSlzFt/K73oIaD8DGaQWd7Z34X9GPiKqP5rbSh84Hl4bOlLcjiSrQ==}
+  strnum@1.1.2:
+    resolution: {integrity: sha512-vrN+B7DBIoTTZjnPNewwhx6cBA/H+IS7rfW68n7XxC1y7uoiGQBxaKzqucGUgavX15dJgiGztLJ8vxuEzwqBdA==}
 
   style-to-js@1.1.21:
     resolution: {integrity: sha512-RjQetxJrrUJLQPHbLku6U/ocGtzyjbJMP9lCNK7Ag0CNh690nSH8woqWH9u16nMjYBAok+i7JO1NP2pOy8IsPQ==}
@@ -6095,7 +6104,7 @@ snapshots:
   '@aws-sdk/xml-builder@3.969.0':
     dependencies:
       '@smithy/types': 4.12.0
-      fast-xml-parser: 5.2.5
+      fast-xml-parser: 4.5.4
       tslib: 2.8.1
 
   '@aws/lambda-invoke-store@0.2.3': {}
@@ -9492,9 +9501,9 @@ snapshots:
 
   fast-sha256@1.3.0: {}
 
-  fast-xml-parser@5.2.5:
+  fast-xml-parser@4.5.4:
     dependencies:
-      strnum: 2.1.2
+      strnum: 1.1.2
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:
@@ -11120,7 +11129,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.10.9
 
-  strnum@2.1.2: {}
+  strnum@1.1.2: {}
 
   style-to-js@1.1.21:
     dependencies:
