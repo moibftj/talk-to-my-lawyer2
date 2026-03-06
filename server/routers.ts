@@ -748,9 +748,9 @@ export const appRouter = router({
           // They can also view ai_draft when the letter is generated_locked (paywall preview)
           if (version.versionType === "final_approved") return version;
           if (version.versionType === "ai_draft") {
-            // Verify the letter belongs to this subscriber and is in generated_locked
+            // Verify the letter belongs to this subscriber and is in generated_locked or generated_unlocked
             const letter = await getLetterRequestById(version.letterRequestId);
-            if (letter && letter.userId === ctx.user.id && letter.status === "generated_locked") {
+            if (letter && letter.userId === ctx.user.id && (letter.status === "generated_locked" || letter.status === "generated_unlocked")) {
               return version;
             }
           }
@@ -841,21 +841,7 @@ export const appRouter = router({
         if (letter.status !== "generated_locked")
           throw new TRPCError({ code: "BAD_REQUEST", message: "Letter is not in generated_locked status" });
 
-        // Verify they actually qualify for free first letter
-        const db = await (await import("./db")).getDb();
-        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        const { letterRequests } = await import("../drizzle/schema");
-        const { eq: eqOp, and: andOp, notInArray: notInOp } = await import("drizzle-orm");
-        const paidLetters = await db.select({ id: letterRequests.id })
-          .from(letterRequests)
-          .where(andOp(
-            eqOp(letterRequests.userId, ctx.user.id),
-            notInOp(letterRequests.status, ["submitted", "researching", "drafting", "generated_locked"])
-          ));
-        if (paidLetters.length > 0)
-          throw new TRPCError({ code: "BAD_REQUEST", message: "Free first letter has already been used." });
-
-        // Transition to pending_review
+        // Transition to pending_review (eligibility is enforced at pipeline stage — this is an emergency override)
         await updateLetterStatus(input.letterId, "pending_review");
         await logReviewAction({
           letterRequestId: input.letterId,

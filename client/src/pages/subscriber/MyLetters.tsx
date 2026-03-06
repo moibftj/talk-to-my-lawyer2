@@ -35,7 +35,7 @@ function getQuickActions(letter: any) {
     actions.push({ label: "Pay to Unlock — $200", icon: CreditCard, href: `/letters/${letter.id}`, variant: "default", color: "bg-amber-500 hover:bg-amber-600 text-white" });
   }
   if (letter.status === "generated_unlocked") {
-    actions.push({ label: "View Draft", icon: Eye, href: `/letters/${letter.id}`, variant: "default", color: "bg-blue-600 hover:bg-blue-700 text-white" });
+    actions.push({ label: "AI Draft Ready — Review for $200", icon: Eye, href: `/letters/${letter.id}`, variant: "default", color: "bg-green-600 hover:bg-green-700 text-white" });
   }
   if (letter.status === "approved" && !(letter as any).pdfUrl) {
     actions.push({ label: "View Letter", icon: Eye, href: `/letters/${letter.id}`, variant: "secondary" });
@@ -179,7 +179,7 @@ export default function MyLetters() {
                       : isLocked
                       ? "border-amber-200 bg-amber-50/20 ring-1 ring-amber-200"
                       : isUnlocked
-                      ? "border-blue-200 bg-blue-50/20"
+                      ? "border-green-200 bg-green-50/20 ring-1 ring-green-200"
                       : needsAction
                       ? "border-orange-200 bg-orange-50/10"
                       : "border-border"
