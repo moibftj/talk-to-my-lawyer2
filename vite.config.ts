@@ -1,13 +1,17 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+
 // vite-plugin-manus-runtime is only available in the Manus build environment.
 // When building on Vercel or other CI platforms, skip it gracefully.
+// Use createRequire (sync) to avoid top-level await which requires es2022 target.
+const _require = createRequire(import.meta.url);
 let vitePluginManusRuntime: (() => Plugin) | null = null;
 try {
-  vitePluginManusRuntime = (await import("vite-plugin-manus-runtime")).vitePluginManusRuntime;
+  vitePluginManusRuntime = _require("vite-plugin-manus-runtime").vitePluginManusRuntime;
 } catch {
   // Not in Manus environment — plugin unavailable, skip
 }
