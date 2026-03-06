@@ -29,8 +29,8 @@ describe("ALLOWED_TRANSITIONS — simplified flow", () => {
     expect(isValidTransition("drafting", "generated_locked")).toBe(true);
   });
 
-  it("drafting → generated_unlocked is NO LONGER valid (old bypass removed)", () => {
-    expect(isValidTransition("drafting", "generated_unlocked")).toBe(false);
+  it("drafting → generated_unlocked is valid (pipeline free path for first-letter users)", () => {
+    expect(isValidTransition("drafting", "generated_unlocked")).toBe(true);
   });
 
   it("generated_locked → pending_review is valid (Stripe webhook path)", () => {
@@ -74,8 +74,8 @@ describe("ALLOWED_TRANSITIONS — simplified flow", () => {
     expect(isValidTransition("rejected", "under_review")).toBe(false);
   });
 
-  it("drafting transitions list has exactly 1 entry (generated_locked only)", () => {
-    expect(ALLOWED_TRANSITIONS["drafting"]).toEqual(["generated_locked"]);
+  it("drafting transitions list has exactly 2 entries (generated_locked and generated_unlocked)", () => {
+    expect(ALLOWED_TRANSITIONS["drafting"]).toEqual(["generated_locked", "generated_unlocked"]);
   });
 
   it("generated_locked transitions list has exactly 1 entry (pending_review only)", () => {
@@ -118,8 +118,8 @@ describe("STATUS_CONFIG — human-friendly labels", () => {
     expect(STATUS_CONFIG["rejected"].label).toBe("Rejected");
   });
 
-  it("generated_unlocked (legacy) maps to same label as generated_locked", () => {
-    expect(STATUS_CONFIG["generated_unlocked"].label).toBe(STATUS_CONFIG["generated_locked"].label);
+  it("generated_unlocked has its own distinct label 'AI Draft Ready'", () => {
+    expect(STATUS_CONFIG["generated_unlocked"].label).toBe("AI Draft Ready");
   });
 });
 

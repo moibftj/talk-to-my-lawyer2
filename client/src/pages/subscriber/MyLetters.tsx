@@ -35,7 +35,7 @@ function getQuickActions(letter: any) {
     actions.push({ label: "Pay to Unlock — $200", icon: CreditCard, href: `/letters/${letter.id}`, variant: "default", color: "bg-amber-500 hover:bg-amber-600 text-white" });
   }
   if (letter.status === "generated_unlocked") {
-    actions.push({ label: "AI Draft Ready — Review for $200", icon: Eye, href: `/letters/${letter.id}`, variant: "default", color: "bg-green-600 hover:bg-green-700 text-white" });
+    actions.push({ label: "Send for Attorney Review — Free", icon: Eye, href: `/letters/${letter.id}`, variant: "default", color: "bg-green-600 hover:bg-green-700 text-white" });
   }
   if (letter.status === "approved" && !(letter as any).pdfUrl) {
     actions.push({ label: "View Letter", icon: Eye, href: `/letters/${letter.id}`, variant: "secondary" });

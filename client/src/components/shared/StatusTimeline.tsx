@@ -29,18 +29,16 @@ interface StatusTimelineProps {
 }
 
 export default function StatusTimeline({ currentStatus, className }: StatusTimelineProps) {
-  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === currentStatus);
   const isTerminal = currentStatus in TERMINAL_STATUSES;
 
-  // When on generated_locked path, skip generated_unlocked step (and vice versa)
-  const isLockedPath = currentStatus === "generated_locked" ||
-    (currentIdx !== -1 && currentIdx < STATUS_STEPS.findIndex((s) => s.key === "generated_unlocked"));
-  const isUnlockedPath = currentStatus === "generated_unlocked" ||
-    (currentIdx !== -1 && currentIdx >= STATUS_STEPS.findIndex((s) => s.key === "generated_unlocked") && currentStatus !== "generated_locked");
+  // Show the generated_unlocked step only when the letter is currently at that status.
+  // For all other statuses (including pending_review and beyond) default to the
+  // generated_locked step so paying users never see the free-path step in their timeline.
+  const isUnlockedPath = currentStatus === "generated_unlocked";
 
   const visibleSteps = STATUS_STEPS.filter((step) => {
     if (step.key === "generated_locked" && isUnlockedPath) return false;
-    if (step.key === "generated_unlocked" && isLockedPath) return false;
+    if (step.key === "generated_unlocked" && !isUnlockedPath) return false;
     return true;
   });
 

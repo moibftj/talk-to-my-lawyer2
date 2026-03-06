@@ -841,7 +841,21 @@ export const appRouter = router({
         if (letter.status !== "generated_locked")
           throw new TRPCError({ code: "BAD_REQUEST", message: "Letter is not in generated_locked status" });
 
-        // Transition to pending_review (eligibility is enforced at pipeline stage — this is an emergency override)
+        // Verify eligibility: no prior completed letters for this user
+        const db = await (await import("./db")).getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const { letterRequests: lr } = await import("../drizzle/schema");
+        const { eq: eqOp, and: andOp, notInArray: notInOp } = await import("drizzle-orm");
+        const priorCompleted = await db.select({ id: lr.id })
+          .from(lr)
+          .where(andOp(
+            eqOp(lr.userId, ctx.user.id),
+            notInOp(lr.status, ["submitted", "researching", "drafting", "generated_locked", "generated_unlocked"])
+          ));
+        if (priorCompleted.length > 0)
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Free first letter has already been used." });
+
+        // Transition to pending_review
         await updateLetterStatus(input.letterId, "pending_review");
         await logReviewAction({
           letterRequestId: input.letterId,
@@ -863,15 +877,21 @@ export const appRouter = router({
             letterId: input.letterId,
             appUrl: getAppUrl(ctx.req),
           });
-          await sendNewReviewNeededEmail({
-            to: "", // Will use admin email from config
-            name: "Attorney Team",
-            letterSubject: letter.subject,
-            letterId: input.letterId,
-            letterType: letter.letterType,
-            jurisdiction: letter.jurisdictionState ?? "Unknown",
-            appUrl: getAppUrl(ctx.req),
-          });
+          const appUrl = getAppUrl(ctx.req);
+          const employees = await getAllUsers("employee");
+          for (const emp of employees) {
+            if (emp.email) {
+              await sendNewReviewNeededEmail({
+                to: emp.email,
+                name: emp.name ?? "Attorney",
+                letterSubject: letter.subject,
+                letterId: input.letterId,
+                letterType: letter.letterType,
+                jurisdiction: letter.jurisdictionState ?? "Unknown",
+                appUrl,
+              });
+            }
+          }
         } catch (e) { console.error("[freeUnlock] Email error:", e); }
 
         return { success: true, free: true };
@@ -906,15 +926,21 @@ export const appRouter = router({
             letterId: input.letterId,
             appUrl: getAppUrl(ctx.req),
           });
-          await sendNewReviewNeededEmail({
-            to: "",
-            name: "Attorney Team",
-            letterSubject: letter.subject,
-            letterId: input.letterId,
-            letterType: letter.letterType,
-            jurisdiction: letter.jurisdictionState ?? "Unknown",
-            appUrl: getAppUrl(ctx.req),
-          });
+          const appUrl = getAppUrl(ctx.req);
+          const employees = await getAllUsers("employee");
+          for (const emp of employees) {
+            if (emp.email) {
+              await sendNewReviewNeededEmail({
+                to: emp.email,
+                name: emp.name ?? "Attorney",
+                letterSubject: letter.subject,
+                letterId: input.letterId,
+                letterType: letter.letterType,
+                jurisdiction: letter.jurisdictionState ?? "Unknown",
+                appUrl,
+              });
+            }
+          }
         } catch (e) { console.error("[sendForReview] Email error:", e); }
 
         return { success: true };
