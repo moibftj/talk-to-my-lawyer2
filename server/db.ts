@@ -27,7 +27,10 @@ export async function getDb() {
     try {
       const client = postgres(dbUrl, {
         ssl: 'require',
-        max: 10,
+        // Serverless environments (Vercel) spin up many instances simultaneously;
+        // use 1 connection per invocation to avoid exhausting Supabase's pool.
+        // For production scale, point DATABASE_URL at Supabase's Transaction Pooler (port 6543).
+        max: process.env.VERCEL ? 1 : 10,
         idle_timeout: 20,
         connect_timeout: 10,
       });

@@ -139,8 +139,11 @@ export async function processDraftReminders(): Promise<ReminderResult> {
 export function registerDraftRemindersRoute(app: Express): void {
   app.post("/api/cron/draft-reminders", async (req: Request, res: Response) => {
     // ── Auth guard ──────────────────────────────────────────────────────────
+    // Accept either a Bearer CRON_SECRET token (external cron services) or
+    // the Vercel-injected x-vercel-cron header (Vercel Cron Jobs).
+    const isVercelCron = req.headers["x-vercel-cron"] === "1";
     const cronSecret = process.env.CRON_SECRET;
-    if (cronSecret) {
+    if (!isVercelCron && cronSecret) {
       const authHeader = req.headers["authorization"] ?? "";
       const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
       if (token !== cronSecret) {

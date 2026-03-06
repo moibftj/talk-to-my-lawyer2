@@ -3,7 +3,14 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
-import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+// vite-plugin-manus-runtime is only available in the Manus build environment.
+// When building on Vercel or other CI platforms, skip it gracefully.
+let vitePluginManusRuntime: (() => Plugin) | null = null;
+try {
+  vitePluginManusRuntime = (await import("vite-plugin-manus-runtime")).vitePluginManusRuntime;
+} catch {
+  // Not in Manus environment — plugin unavailable, skip
+}
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -149,7 +156,12 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  ...(vitePluginManusRuntime ? [vitePluginManusRuntime()] : []),
+  vitePluginManusDebugCollector(),
+];
 
 export default defineConfig({
   plugins,
